@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;650;800&family=Inter:wght@400;500;650;800&display=swap" rel="stylesheet">
+
+  <title>OCR KDA / KD desde Portapapeles</title>
+  
+  
+  <style>
+    :root{
+      --bg0:#060504;
+      --bg1:#0f0b09;
+      --bg2:#15100d;
+      --paper: rgba(255,232,199,.07);
+      --card: rgba(16, 10, 8, .76);
+      --stroke: rgba(255,214,170,.16);
+      --stroke2: rgba(0,0,0,.70);
+      --text: rgba(255, 244, 230, .92);
+      --muted: rgba(255, 225, 195, .68);
+      --gold:#d2a85a;
+      --rust:#e2522c;
+      --ok:#6ee7a8;
+      --bad:#ff6b7a;
+      --shadow: 0 26px 70px rgba(0,0,0,.70);
+      --radius:18px;
+      --radius2:14px;
+    }
+
+    *{ box-sizing:border-box; }
+    html{ color-scheme: dark; }
+
+    body{
+      margin:0;
+      min-height:100vh;
+      padding:28px;
+      color:var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:
+        radial-gradient(1400px 800px at 50% -10%, rgba(210,168,90,.10), transparent 62%),
+        radial-gradient(1100px 650px at 20% 8%, rgba(226,82,44,.10), transparent 58%),
+        radial-gradient(1100px 650px at 86% 18%, rgba(110,231,168,.06), transparent 62%),
+        radial-gradient(1300px 900px at 50% 115%, rgba(0,0,0,.72), transparent 64%),
+        linear-gradient(180deg, var(--bg2), var(--bg0));
+      background-attachment: fixed;
+      position:relative;
+      overflow-x:hidden;
+    }
+
+    /* smoke/noise overlay */
+    body::before{
+      content:"";
+      position:fixed; inset:0;
+      background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNDAiIGhlaWdodD0iMjQwIj4KPGZpbHRlciBpZD0ibiI+CiAgPGZlVHVyYnVsZW5jZSB0eXBlPSJmcmFjdGFsTm9pc2UiIGJhc2VGcmVxdWVuY3k9IjAuOSIgbnVtT2N0YXZlcz0iMyIgc3RpdGNoVGlsZXM9InN0aXRjaCIvPgogIDxmZUNvbG9yTWF0cml4IHR5cGU9Im1hdHJpeCIgdmFsdWVzPSIxIDAgMCAwIDAgIDAgMSAwIDAgMCAgMCAwIDEgMCAwICAwIDAgMCAuMTggMCIvPgo8L2ZpbHRlcj4KPHJlY3Qgd2lkdGg9IjI0MCIgaGVpZ2h0PSIyNDAiIGZpbHRlcj0idXJsKCNuKSIvPgo8L3N2Zz4=");
+      opacity:.55;
+      mix-blend-mode: overlay;
+      pointer-events:none;
+      z-index:0;
+    }
+    body::after{
+      content:"";
+      position:fixed; inset:-30vh -30vw;
+      background:
+        radial-gradient(closest-side at 30% 40%, rgba(255,255,255,.06), transparent 65%),
+        radial-gradient(closest-side at 75% 30%, rgba(255,255,255,.05), transparent 70%),
+        radial-gradient(closest-side at 55% 75%, rgba(255,255,255,.035), transparent 70%);
+      filter: blur(18px);
+      opacity:.55;
+      pointer-events:none;
+      z-index:0;
+      animation: drift 14s ease-in-out infinite alternate;
+    }
+    @keyframes drift{
+      from{ transform: translate3d(-1.5%, -1%, 0) scale(1.02); }
+      to{ transform: translate3d(1.5%, 1.2%, 0) scale(1.03); }
+    }
+
+    .wrap{ max-width:1140px; margin:0 auto; position:relative; z-index:1; }
+
+    header{
+      display:flex;
+      gap:18px;
+      align-items:flex-start;
+      justify-content:space-between;
+      margin-bottom:18px;
+    }
+
+    .brand{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      max-width:860px;
+    }
+
+    h1{
+      font-family: Cinzel, Inter, ui-serif, Georgia, serif;
+      letter-spacing: 1.4px;
+      font-size: clamp(24px, 3.4vw, 40px);
+      margin:0;
+      text-transform:uppercase;
+      text-shadow: 0 3px 30px rgba(0,0,0,.75);
+      position:relative;
+      padding-bottom:10px;
+    }
+
+    /* Ornate divider like a "sigil" */
+    h1::after{
+      content:"";
+      position:absolute;
+      left:0; right:0; bottom:0;
+      height:10px;
+      background:
+        linear-gradient(90deg, transparent 0%, rgba(210,168,90,.65) 15%, rgba(210,168,90,.12) 50%, rgba(210,168,90,.65) 85%, transparent 100%);
+      mask-image: radial-gradient(circle at 50% 50%, #000 0 36%, transparent 38%);
+      opacity:.55;
+    }
+
+    .subtitle{
+      margin-top:0;
+      color:var(--muted);
+      line-height:1.55;
+      font-size: 14px;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:999px;
+      background:
+        linear-gradient(180deg, rgba(255,232,199,.10), rgba(0,0,0,.32));
+      border: 1px solid rgba(255,214,170,.18);
+      box-shadow: 0 18px 45px rgba(0,0,0,.52);
+      color:var(--muted);
+      font-size:13px;
+      white-space:nowrap;
+      backdrop-filter: blur(6px);
+    }
+
+    .dot{
+      width:10px; height:10px; border-radius:999px;
+      background:var(--gold);
+      box-shadow:0 0 0 4px rgba(210,168,90,.18), 0 0 26px rgba(210,168,90,.22);
+    }
+    .dot.ok{ background:var(--ok); box-shadow:0 0 0 4px rgba(110,231,168,.16), 0 0 26px rgba(110,231,168,.20); }
+    .dot.bad{ background:var(--bad); box-shadow:0 0 0 4px rgba(255,107,122,.16), 0 0 26px rgba(255,107,122,.22); }
+
+    .grid{ display:grid; grid-template-columns:1.25fr .75fr; gap:16px; align-items:start; }
+    @media (max-width:980px){ .grid{ grid-template-columns:1fr; } }
+
+    .card{
+      position:relative;
+      background:
+        linear-gradient(180deg, rgba(255,232,199,.07), rgba(0,0,0,.32)),
+        radial-gradient(900px 260px at 20% -10%, rgba(210,168,90,.12), transparent 60%),
+        radial-gradient(900px 260px at 90% -10%, rgba(226,82,44,.10), transparent 62%),
+        var(--card);
+      border: 1px solid rgba(255,214,170,.16);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    /* Corner ornaments */
+    .card::before{
+      content:"";
+      position:absolute; inset:0;
+      pointer-events:none;
+      border-radius:var(--radius);
+      background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMjAiIGhlaWdodD0iMjIwIiB2aWV3Qm94PSIwIDAgMjIwIDIyMCI+CjxnIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjE0LDE3MCwuMzUpIiBzdHJva2Utd2lkdGg9IjIiIG9wYWNpdHk9Ii41NSI+CiAgPHBhdGggZD0iTTEwIDU1IEMyNSAxNSwgNjAgMTAsIDg1IDIwIiAvPgogIDxwYXRoIGQ9Ik0xMCA4NSBDMTUgNjAsIDM1IDQ1LCA1NSA0MCIgLz4KICA8cGF0aCBkPSJNMTY1IDIwIEMxOTAgMTAsIDIwNSAyNSwgMjEwIDU1IiAvPgogIDxwYXRoIGQ9Ik0xNjUgNDAgQzE4NSA0NSwgMjA1IDYwLCAyMTAgODUiIC8+CiAgPHBhdGggZD0iTTIwIDE2NSBDMTAgMTkwLCAyNSAyMDUsIDU1IDIxMCIgLz4KICA8cGF0aCBkPSJNNDAgMTY1IEM0NSAxODUsIDYwIDIwNSwgODUgMjEwIiAvPgogIDxwYXRoIGQ9Ik0xMzUgMjEwIEMxNjAgMjA1LCAxOTAgMTkwLCAyMDAgMTY1IiAvPgogIDxwYXRoIGQ9Ik0xMzUgMTkwIEMxNTUgMTg1LCAxODAgMTcwLCAxOTAgMTU1IiAvPgo8L2c+Cjwvc3ZnPg=="), url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMjAiIGhlaWdodD0iMjIwIiB2aWV3Qm94PSIwIDAgMjIwIDIyMCI+CjxnIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjE0LDE3MCwuMzUpIiBzdHJva2Utd2lkdGg9IjIiIG9wYWNpdHk9Ii41NSI+CiAgPHBhdGggZD0iTTEwIDU1IEMyNSAxNSwgNjAgMTAsIDg1IDIwIiAvPgogIDxwYXRoIGQ9Ik0xMCA4NSBDMTUgNjAsIDM1IDQ1LCA1NSA0MCIgLz4KICA8cGF0aCBkPSJNMTY1IDIwIEMxOTAgMTAsIDIwNSAyNSwgMjEwIDU1IiAvPgogIDxwYXRoIGQ9Ik0xNjUgNDAgQzE4NSA0NSwgMjA1IDYwLCAyMTAgODUiIC8+CiAgPHBhdGggZD0iTTIwIDE2NSBDMTAgMTkwLCAyNSAyMDUsIDU1IDIxMCIgLz4KICA8cGF0aCBkPSJNNDAgMTY1IEM0NSAxODUsIDYwIDIwNSwgODUgMjEwIiAvPgogIDxwYXRoIGQ9Ik0xMzUgMjEwIEMxNjAgMjA1LCAxOTAgMTkwLCAyMDAgMTY1IiAvPgogIDxwYXRoIGQ9Ik0xMzUgMTkwIEMxNTUgMTg1LCAxODAgMTcwLCAxOTAgMTU1IiAvPgo8L2c+Cjwvc3ZnPg=="), url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMjAiIGhlaWdodD0iMjIwIiB2aWV3Qm94PSIwIDAgMjIwIDIyMCI+CjxnIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjE0LDE3MCwuMzUpIiBzdHJva2Utd2lkdGg9IjIiIG9wYWNpdHk9Ii41NSI+CiAgPHBhdGggZD0iTTEwIDU1IEMyNSAxNSwgNjAgMTAsIDg1IDIwIiAvPgogIDxwYXRoIGQ9Ik0xMCA4NSBDMTUgNjAsIDM1IDQ1LCA1NSA0MCIgLz4KICA8cGF0aCBkPSJNMTY1IDIwIEMxOTAgMTAsIDIwNSAyNSwgMjEwIDU1IiAvPgogIDxwYXRoIGQ9Ik0xNjUgNDAgQzE4NSA0NSwgMjA1IDYwLCAyMTAgODUiIC8+CiAgPHBhdGggZD0iTTIwIDE2NSBDMTAgMTkwLCAyNSAyMDUsIDU1IDIxMCIgLz4KICA8cGF0aCBkPSJNNDAgMTY1IEM0NSAxODUsIDYwIDIwNSwgODUgMjEwIiAvPgogIDxwYXRoIGQ9Ik0xMzUgMjEwIEMxNjAgMjA1LCAxOTAgMTkwLCAyMDAgMTY1IiAvPgogIDxwYXRoIGQ9Ik0xMzUgMTkwIEMxNTUgMTg1LCAxODAgMTcwLCAxOTAgMTU1IiAvPgo8L2c+Cjwvc3ZnPg=="), url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMjAiIGhlaWdodD0iMjIwIiB2aWV3Qm94PSIwIDAgMjIwIDIyMCI+CjxnIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjE0LDE3MCwuMzUpIiBzdHJva2Utd2lkdGg9IjIiIG9wYWNpdHk9Ii41NSI+CiAgPHBhdGggZD0iTTEwIDU1IEMyNSAxNSwgNjAgMTAsIDg1IDIwIiAvPgogIDxwYXRoIGQ9Ik0xMCA4NSBDMTUgNjAsIDM1IDQ1LCA1NSA0MCIgLz4KICA8cGF0aCBkPSJNMTY1IDIwIEMxOTAgMTAsIDIwNSAyNSwgMjEwIDU1IiAvPgogIDxwYXRoIGQ9Ik0xNjUgNDAgQzE4NSA0NSwgMjA1IDYwLCAyMTAgODUiIC8+CiAgPHBhdGggZD0iTTIwIDE2NSBDMTAgMTkwLCAyNSAyMDUsIDU1IDIxMCIgLz4KICA8cGF0aCBkPSJNNDAgMTY1IEM0NSAxODUsIDYwIDIwNSwgODUgMjEwIiAvPgogIDxwYXRoIGQ9Ik0xMzUgMjEwIEMxNjAgMjA1LCAxOTAgMTkwLCAyMDAgMTY1IiAvPgogIDxwYXRoIGQ9Ik0xMzUgMTkwIEMxNTUgMTg1LCAxODAgMTcwLCAxOTAgMTU1IiAvPgo8L2c+Cjwvc3ZnPg==");
+      background-repeat:no-repeat;
+      background-size: 160px 160px;
+      background-position: left -20px top -20px, right -20px top -20px, left -20px bottom -20px, right -20px bottom -20px;
+      opacity:.35;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,.35));
+    }
+
+    .card::after{
+      content:"";
+      position:absolute; inset:0;
+      pointer-events:none;
+      border-radius:var(--radius);
+      box-shadow:
+        inset 0 0 0 1px rgba(0,0,0,.72),
+        inset 0 0 0 2px rgba(255,214,170,.05),
+        inset 0 0 70px rgba(0,0,0,.55);
+    }
+
+    .card .head{
+      padding:16px 16px 12px;
+      border-bottom:1px solid rgba(255,214,170,.12);
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:center;
+      background:
+        linear-gradient(180deg, rgba(255,232,199,.06), rgba(0,0,0,.30));
+    }
+
+    .card .title{
+      font-family: Cinzel, Inter, ui-serif, Georgia, serif;
+      font-weight:800;
+      letter-spacing: 1.1px;
+      text-transform:uppercase;
+      font-size: 13px;
+      color: rgba(255,244,230,.92);
+    }
+
+    .card .body{ padding:16px; position:relative; z-index:1; }
+
+    .drop{
+      border: 2px dashed rgba(255,214,170,.24);
+      border-radius: var(--radius2);
+      padding:16px;
+      background:
+        linear-gradient(180deg, rgba(255,232,199,.04), rgba(0,0,0,.36));
+      outline:none;
+    }
+
+    .drop:focus{
+      border-color: rgba(210,168,90,.72);
+      box-shadow:0 0 0 5px rgba(210,168,90,.18), 0 0 45px rgba(210,168,90,.14);
+    }
+
+    .actions{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:12px; }
+
+    button{
+      padding:10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,214,170,.18);
+      background:
+        linear-gradient(180deg, rgba(255,232,199,.10), rgba(0,0,0,.34));
+      color: var(--text);
+      cursor:pointer;
+      box-shadow: 0 14px 28px rgba(0,0,0,.45);
+      letter-spacing:.2px;
+    }
+    button:hover{
+      border-color: rgba(210,168,90,.36);
+      box-shadow: 0 18px 34px rgba(0,0,0,.52), 0 0 0 3px rgba(210,168,90,.10);
+      transform: translateY(-1px);
+    }
+    button:active{ transform: translateY(0); }
+    button:disabled{ opacity:.45; cursor:not-allowed; transform:none; box-shadow: 0 12px 20px rgba(0,0,0,.28); }
+
+    .hint{ color:var(--muted); margin:10px 0 0; line-height:1.55; }
+
+    .preview{
+      margin-top:12px;
+      border-radius: var(--radius2);
+      border:1px solid rgba(255,214,170,.14);
+      overflow:hidden;
+      background: rgba(0,0,0,.36);
+    }
+    .preview img{ display:block; width:100%; max-height:380px; object-fit:contain; }
+
+    .kpis{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    @media (max-width:520px){ .kpis{ grid-template-columns:1fr; } }
+
+    .kpi{
+      background:
+        linear-gradient(180deg, rgba(255,232,199,.06), rgba(0,0,0,.35)),
+        radial-gradient(240px 160px at 100% 0%, rgba(210,168,90,.18), transparent 62%),
+        radial-gradient(220px 150px at 0% 100%, rgba(226,82,44,.14), transparent 60%);
+      border: 1px solid rgba(255,214,170,.16);
+      border-radius: var(--radius2);
+      padding:14px;
+      min-height:150px;
+      position:relative;
+      overflow:hidden;
+    }
+
+    .kpi .label{
+      color:rgba(255,225,195,.70);
+      font-size:12px;
+      letter-spacing:.9px;
+      text-transform:uppercase;
+      font-family: Cinzel, Inter, ui-serif, Georgia, serif;
+    }
+
+    .kpi .value{
+      font-size:40px;
+      font-weight:900;
+      margin-top:6px;
+      text-shadow: 0 12px 34px rgba(0,0,0,.65);
+    }
+
+    .kpi .sub{ margin-top:6px; color:var(--muted); font-size:13px; }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,214,170,.18);
+      background: rgba(0,0,0,.22);
+      color:var(--muted);
+      font-size:12px;
+      margin-top:8px;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.35);
+    }
+
+    .badge .mini{
+      width:8px; height:8px; border-radius:999px;
+      background: var(--gold);
+      box-shadow:0 0 0 4px rgba(210,168,90,.16), 0 0 18px rgba(210,168,90,.18);
+    }
+    .badge .mini.ok{ background: var(--ok); box-shadow:0 0 0 4px rgba(110,231,168,.14), 0 0 18px rgba(110,231,168,.16); }
+    .badge .mini.bad{ background: var(--bad); box-shadow:0 0 0 4px rgba(255,107,122,.14), 0 0 18px rgba(255,107,122,.16); }
+
+    .meter{
+      margin-top:10px;
+      padding:10px 10px 12px;
+      border-radius: 14px;
+      border:1px solid rgba(255,214,170,.16);
+      background:
+        linear-gradient(180deg, rgba(255,232,199,.05), rgba(0,0,0,.34));
+    }
+
+    .meterTop{ display:flex; align-items:center; justify-content:space-between; gap:10px; color:var(--muted); font-size:12px; line-height:1.25; margin-bottom:8px; }
+    .meterTop b{ color:rgba(255,244,230,.92); font-weight:800; letter-spacing:.5px; }
+
+    .progress{
+      width:100%;
+      height:14px;
+      border-radius:999px;
+      overflow:hidden;
+      border:1px solid rgba(255,214,170,.16);
+      background:
+        linear-gradient(180deg, rgba(255,232,199,.05), rgba(0,0,0,.42));
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.35), 0 12px 26px rgba(0,0,0,.45);
+    }
+
+    .bar{
+      height:100%;
+      width:0%;
+      border-radius:999px;
+      background:
+        linear-gradient(90deg, rgba(210,168,90,.98), rgba(226,82,44,.92));
+      box-shadow: 0 0 26px rgba(226,82,44,.16), 0 0 26px rgba(210,168,90,.12);
+      transition: width 240ms ease;
+      position:relative;
+    }
+    .bar::after{
+      content:"";
+      position:absolute; inset:0;
+      background: repeating-linear-gradient(135deg, rgba(255,255,255,.10) 0 7px, transparent 7px 14px);
+      opacity:.24;
+      mix-blend-mode: overlay;
+      pointer-events:none;
+    }
+
+    pre{
+      margin:0;
+      white-space:pre-wrap;
+      background:
+        linear-gradient(180deg, rgba(255,232,199,.04), rgba(0,0,0,.44));
+      border:1px solid rgba(255,214,170,.14);
+      border-radius: var(--radius2);
+      padding:14px;
+      color:rgba(255,244,230,.86);
+      line-height:1.55;
+      min-height:110px;
+    }
+
+    .small{ color: rgba(255,225,195,.60); font-size:12px; margin-top:10px; line-height:1.45; }
+  </style>
+
+
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <div class="brand"><h1>Hunt HUD • OCR → KD / KDA</h1><div class="subtitle">Pegá una imagen con <b>Ctrl+V</b>. Extraigo los <b>3 primeros números</b> (kills, deaths, assists) y muestro <b>KD</b>, tu “<b>KDA</b>”, progreso a <b>+0.01</b> (redondeo real) y <b>Safe</b>.</div></div>
+        <div class="subtitle">
+          Pegá una imagen con <b>Ctrl+V</b>. Extraigo los <b>3 primeros números</b> (n1, n2, n3) y calculo:
+          <b>KD = n1/n2</b>, <b>(n1+n3)/n2</b> y progreso para subir <b>0.01</b>.
+        </div>
+      </div>
+      <div class="pill"><span class="dot" id="dot"></span><span id="status">Esperando imagen…</span></div>
+    </header>
+
+    <div class="grid">
+      <section class="card">
+        <div class="head">
+          <div class="title">Entrada / Portapapeles</div>
+          <div class="pill" style="box-shadow:none;background:rgba(255,255,255,.05)">Ctrl+V aquí</div>
+        </div>
+        <div class="body">
+          <div class="drop" id="dropZone" tabindex="0">
+            <div class="hint">
+              ✅ Click acá para enfocarlo, luego <b>Ctrl+V</b>.<br/>
+              Si no anda, probá el botón <b>“Leer del portapapeles”</b> (requiere permiso).
+            </div>
+
+            <div class="actions">
+              <button id="clearBtn">Limpiar</button>
+              <button id="readBtn">Leer del portapapeles</button>
+              <button id="copyBtn" disabled>Copiar resultado</button>
+            </div>
+
+            <div class="preview" id="previewBox" style="display:none">
+              <img id="preview" alt="preview" />
+            </div>
+
+            <div class="small" id="debug">Debug: —</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="head">
+          <div class="title">Resultados / HUD</div>
+          <div class="pill" style="box-shadow:none;background:rgba(255,255,255,.05)">n1 / n2 / n3</div>
+        </div>
+        <div class="body">
+          <div class="kpis">
+            <div class="kpi">
+              <div class="label">KD (n1 / n2)</div>
+              <div class="value" id="kdBig">—</div>
+              <div class="sub" id="kdSub">—</div>
+              <div class="badge"><span class="mini" id="kdMini"></span><span id="kdNext">—</span></div>
+
+              <!-- NEW: progress to next 0.01 + safe -->
+              <div class="meter">
+                <div class="meterTop">
+                  <span id="kdProgLabel">—</span>
+                  <span><b id="kdSafe">—</b></span>
+                </div>
+                <div class="progress" aria-label="Progreso KD a próximo 0.01">
+                  <div class="bar" id="kdBar"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="kpi">
+              <div class="label">Tu fórmula “KDA” ((n1 + n3) / n2)</div>
+              <div class="value" id="kdaBig">—</div>
+              <div class="sub" id="kdaSub">—</div>
+              <div class="badge"><span class="mini" id="kdaMini"></span><span id="kdaNext">—</span></div>
+
+              <!-- NEW: progress to next 0.01 + safe -->
+              <div class="meter">
+                <div class="meterTop">
+                  <span id="kdaProgLabel">—</span>
+                  <span><b id="kdaSafe">—</b></span>
+                </div>
+                <div class="progress" aria-label="Progreso KDA a próximo 0.01">
+                  <div class="bar" id="kdaBar"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="height:12px"></div>
+          <pre id="out">—</pre>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const dotEl = document.getElementById('dot');
+    const outEl = document.getElementById('out');
+
+    const previewBox = document.getElementById('previewBox');
+    const previewEl = document.getElementById('preview');
+
+    const kdBig = document.getElementById('kdBig');
+    const kdSub = document.getElementById('kdSub');
+    const kdNext = document.getElementById('kdNext');
+    const kdMini = document.getElementById('kdMini');
+    const kdProgLabel = document.getElementById('kdProgLabel');
+    const kdBar = document.getElementById('kdBar');
+    const kdSafe = document.getElementById('kdSafe');
+
+    const kdaBig = document.getElementById('kdaBig');
+    const kdaSub = document.getElementById('kdaSub');
+    const kdaNext = document.getElementById('kdaNext');
+    const kdaMini = document.getElementById('kdaMini');
+    const kdaProgLabel = document.getElementById('kdaProgLabel');
+    const kdaBar = document.getElementById('kdaBar');
+    const kdaSafe = document.getElementById('kdaSafe');
+
+    const clearBtn = document.getElementById('clearBtn');
+    const readBtn = document.getElementById('readBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const dropZone = document.getElementById('dropZone');
+    const debugEl = document.getElementById('debug');
+
+    function setState(state, msg){
+      statusEl.textContent = msg;
+      dotEl.classList.remove('ok','bad');
+      if(state === 'ok') dotEl.classList.add('ok');
+      else if(state === 'bad') dotEl.classList.add('bad');
+    }
+
+    function fmt(n, digits=3){
+      if(!Number.isFinite(n)) return '—';
+      const s = n.toFixed(digits);
+      return s.replace(/\.?0+$/,'');
+    }
+
+    function clamp01(x){
+      return Math.max(0, Math.min(1, x));
+    }
+
+    function reset(){
+      outEl.textContent = '—';
+      previewBox.style.display = 'none';
+      previewEl.src = '';
+
+      kdBig.textContent = '—';
+      kdSub.textContent = '—';
+      kdNext.textContent = '—';
+      kdProgLabel.textContent = '—';
+      kdBar.style.width = '0%';
+      kdSafe.textContent = '—';
+      kdMini.classList.remove('ok','bad');
+
+      kdaBig.textContent = '—';
+      kdaSub.textContent = '—';
+      kdaNext.textContent = '—';
+      kdaProgLabel.textContent = '—';
+      kdaBar.style.width = '0%';
+      kdaSafe.textContent = '—';
+      kdaMini.classList.remove('ok','bad');
+
+      copyBtn.disabled = true;
+      debugEl.textContent = 'Debug: —';
+      setState('idle','Esperando imagen…');
+    }
+
+    clearBtn.addEventListener('click', reset);
+
+    // IMPORTANTE: aseguramos foco para que Ctrl+V caiga acá
+    dropZone.addEventListener('click', () => dropZone.focus());
+    window.addEventListener('load', () => dropZone.focus());
+
+    copyBtn.addEventListener('click', async () => {
+      try{
+        await navigator.clipboard.writeText(outEl.textContent);
+        setState('ok','Resultado copiado ✅');
+        setTimeout(() => setState('ok','Listo ✅'), 900);
+      }catch(e){
+        setState('bad','No pude copiar (permiso del navegador).');
+      }
+    });
+
+    /**
+     * Stats hacia el próximo 0.01 (hundredth) y "safe por X" (cuántas muertes podés sumar
+     * sin que el valor *mostrado* (2 decimales hacia abajo) baje).
+     *
+     * - ratio = numerator / denominator
+     * - mostrado = floor(ratio*100)/100
+     * - next = mostrado + 0.01
+     * - neededKills = ceil(next*denominator - numerator)
+     * - progress = (numerator - base*denominator) / (next*denominator - base*denominator)
+     * - safeDeaths = floor(numerator/mostrado - denominator)
+     */
+    
+    // REDONDEO a 2 decimales (half-up). Ej: 1.965 -> 1.97
+    function round2(x){
+      // Epsilon para mitigar casos binarios raros (1.005, 1.965, etc.)
+      return Math.round((x + 1e-12) * 100) / 100;
+    }
+
+    /**
+     * Stats hacia el próximo +0.01 considerando el valor MOSTRADO (2 decimales, redondeo half-up).
+     *
+     * Para que el valor mostrado suba +0.01:
+     *   necesitás ratio >= (nextShown - 0.005)
+     *
+     * "Safe por X" = cuántas muertes extra podés sumar sin que el valor mostrado baje,
+     * manteniendo ratio >= (shown - 0.005).
+     */
+    function hundredthStats(numerator, denominator){
+      if(denominator <= 0){
+        return {
+          ratio: Infinity,
+          shown: Infinity,
+          nextShown: Infinity,
+          needed: 0,
+          progress: 1,
+          safeDeaths: Infinity,
+          note: 'Deaths=0 → infinito'
+        };
+      }
+
+      const ratio = numerator / denominator;
+
+      // Valor mostrado (2 decimales, redondeo half-up)
+      const shown = round2(ratio);
+      const nextShown = round2(shown + 0.01);
+
+      const halfStep = 0.005;
+
+      // Umbrales reales (no redondeados) para que el "shown" sea ese valor:
+      // shown si ratio >= shown - 0.005 (y < shown + 0.005)
+      const startRatio = Math.max(0, shown - halfStep);
+      // para que muestre nextShown, alcanza con ratio >= nextShown - 0.005
+      const nextRatio = Math.max(0, nextShown - halfStep);
+
+      // Kills necesarios para cruzar el umbral del próximo centésimo mostrado
+      const needed = Math.max(0, Math.ceil(nextRatio * denominator - numerator - 1e-12));
+
+      // Progreso desde el umbral inferior del shown hasta el umbral inferior del nextShown
+      const rangeStart = startRatio * denominator;
+      const rangeEnd = nextRatio * denominator;
+      const denomRange = (rangeEnd - rangeStart) || 1;
+      const progress = clamp01((numerator - rangeStart) / denomRange);
+
+      // Safe deaths: máximo d tal que round2(numerator/(denominator+d)) >= shown
+      // Condición suficiente: numerator/(den+d) >= shown - 0.005
+      let safeDeaths = 0;
+      const keepRatio = Math.max(0, shown - halfStep);
+      if(shown <= 0 || keepRatio <= 0){
+        safeDeaths = Infinity;
+      }else{
+        safeDeaths = Math.max(0, Math.floor((numerator / keepRatio) - denominator + 1e-12));
+      }
+
+      return { ratio, shown, nextShown, needed, progress, safeDeaths, note: null };
+    }
+
+
+      
+
+    
+
+    function setMiniState(el, ok){
+      el.classList.remove('ok','bad');
+      el.classList.add(ok ? 'ok' : 'bad');
+    }
+
+    async function handleImageFile(file, sourceLabel){
+      // preview
+      previewEl.src = URL.createObjectURL(file);
+      previewBox.style.display = 'block';
+
+      setState('idle', `OCR… (${sourceLabel})`);
+
+      try{
+        const res = await Tesseract.recognize(file, 'eng');
+        const text = res?.data?.text ?? '';
+
+        const matches = (text.match(/-?\d+(?:[.,]\d+)?/g) || []).map(s => s.replace(',', '.'));
+
+        if(matches.length < 3){
+          outEl.textContent =
+            `Texto detectado:\n${text}\n\n` +
+            `No encontré 3 números. Encontré: ${matches.length ? matches.join(', ') : '0'}\n`;
+          setState('bad','Listo (faltan números).');
+          return;
+        }
+
+        const n1 = parseFloat(matches[0]); // kills
+        const n2 = parseFloat(matches[1]); // deaths
+        const n3 = parseFloat(matches[2]); // assists
+
+        if(!Number.isFinite(n1) || !Number.isFinite(n2) || !Number.isFinite(n3)){
+          outEl.textContent = `Números detectados inválidos: ${matches.slice(0,3).join(', ')}`;
+          setState('bad','Listo (inválido).');
+          return;
+        }
+
+        const kdNum = n1;
+        const kdDen = n2;
+        const kdaNum = (n1 + n3);
+        const kdaDen = n2;
+
+        const kd = (kdDen === 0) ? Infinity : (kdNum / kdDen);
+        const kda = (kdaDen === 0) ? Infinity : (kdaNum / kdaDen);
+
+        const kdS = hundredthStats(kdNum, kdDen);
+        const kdaS = hundredthStats(kdaNum, kdaDen);
+
+        // Big KPIs
+        kdBig.textContent = Number.isFinite(kd) ? fmt(kd, 3) : '∞';
+        kdSub.textContent = `KD = ${fmt(n1)} / ${fmt(n2)}`;
+
+        kdaBig.textContent = Number.isFinite(kda) ? fmt(kda, 3) : '∞';
+        kdaSub.textContent = `(${fmt(n1)} + ${fmt(n3)}) / ${fmt(n2)}`;
+
+        // Next 0.01 text
+        kdNext.textContent = (Number.isFinite(kdS.nextShown))
+          ? `+0.01 → ${fmt(kdS.nextShown, 2)}: faltan ${kdS.needed} kills`
+          : (kdS.note || '—');
+
+        kdaNext.textContent = (Number.isFinite(kdaS.nextShown))
+          ? `+0.01 → ${fmt(kdaS.nextShown, 2)}: faltan ${kdaS.needed} kills`
+          : (kdaS.note || '—');
+
+        // Progress bars
+        kdBar.style.width = `${Math.round(kdS.progress * 100)}%`;
+        kdaBar.style.width = `${Math.round(kdaS.progress * 100)}%`;
+
+        kdProgLabel.textContent = Number.isFinite(kdS.shown)
+          ? `Progreso ${fmt(kdS.shown,2)} → ${fmt(kdS.nextShown,2)}: ${Math.round(kdS.progress*100)}%`
+          : 'Progreso: —';
+
+        kdaProgLabel.textContent = Number.isFinite(kdaS.shown)
+          ? `Progreso ${fmt(kdaS.shown,2)} → ${fmt(kdaS.nextShown,2)}: ${Math.round(kdaS.progress*100)}%`
+          : 'Progreso: —';
+
+        // Safe indicators (cuántas muertes sin bajar el valor mostrado a 2 decimales, base=floor)
+        kdSafe.textContent = (kdS.safeDeaths === Infinity) ? 'Safe: ∞' : `Safe: ${kdS.safeDeaths}`;
+        kdaSafe.textContent = (kdaS.safeDeaths === Infinity) ? 'Safe: ∞' : `Safe: ${kdaS.safeDeaths}`;
+
+        // Mini dot color: ok if needed==0 (ya estás en el borde), else ok if progress>=0.5 maybe
+        setMiniState(kdMini, kdS.needed === 0 || kdS.progress >= 0.5);
+        setMiniState(kdaMini, kdaS.needed === 0 || kdaS.progress >= 0.5);
+
+        // Output text (más “debuggable”)
+        const kdBase = Number.isFinite(kdS.shown) ? fmt(kdS.shown,2) : '—';
+        const kdaBase = Number.isFinite(kdaS.shown) ? fmt(kdaS.shown,2) : '—';
+
+        outEl.textContent =
+          `n1 (kills)   = ${fmt(n1)}\n` +
+          `n2 (deaths)  = ${fmt(n2)}\n` +
+          `n3 (assists) = ${fmt(n3)}\n\n` +
+          `KD  = ${fmt(kd,3)}  (mostrado ${kdBase})\n` +
+          `  +0.01 → ${fmt(kdS.nextShown,2)}: faltan ${kdS.needed} kills\n` +
+          `  Safe por ${kdS.safeDeaths === Infinity ? '∞' : kdS.safeDeaths} deaths\n\n` +
+          `KDA = ${fmt(kda,3)}  (mostrado ${kdaBase})\n` +
+          `  +0.01 → ${fmt(kdaS.nextShown,2)}: faltan ${kdaS.needed} kills\n` +
+          `  Safe por ${kdaS.safeDeaths === Infinity ? '∞' : kdaS.safeDeaths} deaths\n`;
+
+        copyBtn.disabled = false;
+        setState('ok','Listo ✅');
+      }catch(err){
+        outEl.textContent = `Error OCR: ${err?.message || err}`;
+        setState('bad','Error OCR ❌');
+      }
+    }
+
+    function describeClipboardItems(items){
+      const types = [...items].map(i => i.type || '(sin type)');
+      debugEl.textContent = `Debug: items=${items.length} types=[${types.join(', ')}]`;
+    }
+
+    // ✅ Manejador de paste (más robusto)
+    async function onPaste(event){
+      const cd = event.clipboardData;
+      if(!cd){
+        debugEl.textContent = 'Debug: clipboardData es null (limitación del navegador).';
+        setState('bad','No pude acceder al portapapeles desde este evento.');
+        return;
+      }
+
+      describeClipboardItems(cd.items);
+
+      const imgItem = [...cd.items].find(i => i.type && i.type.startsWith('image/'));
+      if(!imgItem){
+        setState('bad','Pegaste algo que no es imagen. Copiá una imagen/screenshot.');
+        return;
+      }
+
+      const file = imgItem.getAsFile();
+      if(!file){
+        setState('bad','No pude convertir el item a File.');
+        return;
+      }
+
+      await handleImageFile(file, 'paste');
+    }
+
+    // Escuchamos en varios lugares, en CAPTURE, para que no se pierda.
+    window.addEventListener('paste', onPaste, true);
+    document.addEventListener('paste', onPaste, true);
+    dropZone.addEventListener('paste', onPaste, true);
+
+    // ✅ Fallback: leer desde clipboard API (requiere HTTPS/localhost y permiso)
+    readBtn.addEventListener('click', async () => {
+      try{
+        if(!navigator.clipboard || !navigator.clipboard.read){
+          setState('bad','Este navegador no soporta leer imágenes con clipboard.read().');
+          debugEl.textContent = 'Debug: navigator.clipboard.read no disponible.';
+          return;
+        }
+        setState('idle','Leyendo portapapeles (permiso)…');
+
+        const items = await navigator.clipboard.read();
+        debugEl.textContent = `Debug: clipboard.read() items=${items.length}`;
+
+        // Busca el primer item con tipo image/*
+        for(const item of items){
+          const imgType = item.types.find(t => t.startsWith('image/'));
+          if(imgType){
+            const blob = await item.getType(imgType);
+            const file = new File([blob], `clipboard.${imgType.split('/')[1] || 'png'}`, { type: imgType });
+            await handleImageFile(file, 'clipboard.read()');
+            return;
+          }
+        }
+
+        setState('bad','No encontré una imagen en el portapapeles.');
+      }catch(e){
+        setState('bad','No pude leer el portapapeles (permiso/HTTPS).');
+        debugEl.textContent = `Debug error: ${e?.message || e}`;
+      }
+    });
+
+    reset();
+  </script>
+</body>
+</html>
