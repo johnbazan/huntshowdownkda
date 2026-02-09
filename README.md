@@ -1,218 +1,126 @@
-Hunt HUD • OCR → KD / KDA
+# Hunt HUD • OCR → KD / KDA
 
-Un HUD estilo Hunt: Showdown que toma una imagen pegada desde el portapapeles (Ctrl+V), extrae kills / deaths / assists con OCR y calcula:
+Un HUD estilo **Hunt: Showdown** que toma una **imagen pegada desde el portapapeles (Ctrl+V)**, extrae **kills / deaths / assists** con OCR y calcula:
 
-KD = kills / deaths
+* **KD = kills / deaths**
+* **KDA = (kills + assists) / deaths**
+* **Progreso real** para subir **+0.01** (con **redondeo half-up**: `1.965 → 1.97`)
+* **Safe por X**: cuántas muertes podés sumar sin que baje el valor mostrado (a 2 decimales)
 
-KDA = (kills + assists) / deaths
+Todo corre **100% en el navegador**. No hay backend. No hay datos que salgan de tu PC.
 
-Progreso real para subir +0.01 (con redondeo half-up: 1.965 → 1.97)
+---
 
-Safe por X: cuántas muertes podés sumar sin que baje el valor mostrado (a 2 decimales)
+## ✨ Demo (Ctrl+V)
 
-Todo corre 100% en el navegador. No hay backend. No hay datos que salgan de tu PC.
+1. Abrí la página
+2. Hacé click en el panel
+3. Pegá un screenshot con **Ctrl+V**
+4. Mirá el HUD actualizarse
 
-✨ Demo (Ctrl+V)
+---
 
-Abrí la página
+## 🧠 Cómo funciona el cálculo (lo importante)
 
-Hacé click en el panel
-
-Pegá un screenshot con Ctrl+V
-
-Mirá el HUD actualizarse
-
-🧠 Cómo funciona el cálculo (lo importante)
-
-El valor mostrado usa redondeo a 2 decimales half-up.
+El valor mostrado usa **redondeo a 2 decimales half-up**.
 
 Para que el número mostrado suba +0.01:
 
+```
 ratio >= (nextShown - 0.005)
+```
 
+Para que **no baje** aunque sumes muertes (“Safe”):
 
-Para que no baje aunque sumes muertes (“Safe”):
-
+```
 ratio >= (shown - 0.005)
+```
 
+Eso hace que los cálculos coincidan **exactamente** con lo que ves en pantalla.
 
-Esto hace que los cálculos coincidan exactamente con lo que ves en pantalla.
+---
 
-🗂 Estructura
+## 🗂 Estructura
 
-Este repo es un único HTML estático:
+Este repo es un **único HTML estático**:
 
+```
 average_hunt_lore_components.html
-
+```
 
 Incluye:
 
-Estilos inspirados en Hunt (tiles, tagbar, brass/rust, grano, humo)
+* Estilos inspirados en Hunt (tiles, tagbar, brass/rust, grano, humo)
+* OCR con `tesseract.js`
+* Lógica de KD/KDA y progreso
+* Filtros tipo “Lore” (All / KD / KDA / Debug)
 
-OCR con tesseract.js
+---
 
-Lógica de KD/KDA y progreso
+## 🚀 Hostearlo gratis (recomendado)
 
-Filtros tipo “Lore” (All / KD / KDA / Debug)
+La forma más simple:
 
-🚀 Hostearlo gratis (recomendado)
-Cloudflare Pages
+### Opción 1 — Cloudflare Pages
 
-https://pages.cloudflare.com
-
-Create project → Upload assets
-
-Subí el HTML
-
-Listo: tunombre.pages.dev
+1. Entrá a [https://pages.cloudflare.com](https://pages.cloudflare.com)
+2. **Create project → Upload assets**
+3. Subí el HTML
+4. Listo: `tunombre.pages.dev`
 
 Podés conectar tu propio dominio gratis.
 
-Vercel / Netlify
+### Opción 2 — Vercel / Netlify
 
 Drag & drop del archivo y ya queda online.
 
-🔒 Privacidad
+---
 
-No hay servidor
+## 🔒 Privacidad
 
-No se suben imágenes
+* No hay servidor
+* No se suben imágenes
+* Todo el OCR ocurre en tu navegador
 
-Todo el OCR ocurre en tu navegador
+---
 
-🧩 Personalización
+## 🧩 Personalización
 
 Podés modificar fácilmente:
 
-Colores en :root
+* Colores en `:root`
+* Textos del HUD
+* Estilo de tiles
+* Cálculo en la función `hundredthStats`
 
-Textos del HUD
+---
 
-Estilo de tiles
+## 🎮 Inspiración visual
 
-Cálculo en la función hundredthStats
+El layout replica componentes visuales de la sección **Lore** de Hunt Showdown:
 
-🎮 Inspiración visual
+* Tagbar tipo filtros
+* Tiles con kicker + título grande + CTA
+* Estética brass / rust / parchment
 
-El layout replica componentes visuales de la sección Lore de Hunt Showdown:
+---
 
-Tagbar tipo filtros
-
-Tiles con kicker + título grande + CTA
-
-Estética brass / rust / parchment
-
-🛠 Requisitos
+## 🛠 Requisitos
 
 Cualquier navegador moderno con:
 
-Soporte para Clipboard API
+* Soporte para Clipboard API
+* Soporte para WebAssembly (Tesseract)
 
-Soporte para WebAssembly (Tesseract)
+---
 
-📝 Licencia
+## 📝 Licencia
 
 Uso personal / educativo.
-El estilo está inspirado en Hunt Showdown, pero no usa assets oficiales.
+El estilo está **inspirado** en Hunt Showdown, pero no usa assets oficiales.
 
-🇬🇧 English Version
-Hunt HUD • OCR → KD / KDA
+---
 
-A Hunt: Showdown-styled HUD that takes an image pasted from your clipboard (Ctrl+V), extracts kills / deaths / assists via OCR and calculates:
+## ❤️ Autor
 
-KD = kills / deaths
-
-KDA = (kills + assists) / deaths
-
-True progress to the next +0.01 (using half-up rounding: 1.965 → 1.97)
-
-Safe by X: how many deaths you can add without lowering the displayed value (2 decimals)
-
-Everything runs 100% in the browser. No backend. No data leaves your machine.
-
-✨ Demo (Ctrl+V)
-
-Open the page
-
-Click inside the panel
-
-Paste a screenshot with Ctrl+V
-
-Watch the HUD update
-
-🧠 How the math works
-
-Displayed values use 2-decimal half-up rounding.
-
-To increase the shown value by +0.01:
-
-ratio >= (nextShown - 0.005)
-
-
-To avoid decreasing the shown value (“Safe”):
-
-ratio >= (shown - 0.005)
-
-
-This makes the math match exactly what you see on screen.
-
-🗂 Structure
-
-This repo is a single static HTML file:
-
-average_hunt_lore_components.html
-
-
-It includes:
-
-Hunt-inspired styling (tiles, tagbar, brass/rust, grain, smoke)
-
-OCR with tesseract.js
-
-KD/KDA logic and progress bars
-
-Lore-style filters (All / KD / KDA / Debug)
-
-🚀 Free hosting (recommended)
-Cloudflare Pages
-
-https://pages.cloudflare.com
-
-Create project → Upload assets
-
-Upload the HTML
-
-Done: yourname.pages.dev
-
-You can attach your own domain for free.
-
-Vercel / Netlify
-
-Drag & drop the file and you’re live.
-
-🔒 Privacy
-
-No server
-
-No image uploads
-
-OCR runs locally in your browser
-
-🧩 Customization
-
-You can easily tweak:
-
-Colors in :root
-
-HUD texts
-
-Tile styles
-
-The hundredthStats function
-
-📝 License
-
-Personal / educational use.
-Visual style is inspired by Hunt Showdown, no official assets used.
-
-Made for KD-obsessed hunters who need to know exactly how many kills are left for the next +0.01.
+Hecho para jugadores obsesivos del KD que necesitan saber **exactamente** cuántos kills faltan para subir 0.01 😄
