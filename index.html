@@ -6,6 +6,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;650;800&family=Inter:wght@400;500;650;800&display=swap" rel="stylesheet">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <title>OCR KDA / KD desde Portapapeles</title>
   
@@ -384,7 +385,31 @@
           <b>KD = n1/n2</b>, <b>(n1+n3)/n2</b> y progreso para subir <b>0.01</b>.
         </div>
       </div>
-      <div class="pill"><span class="dot" id="dot"></span><span id="status">Esperando imagen…</span></div>
+      <div style="display:flex; flex-direction:column; gap:10px; align-items:flex-end;">
+        <div class="pill">
+          <span class="dot" id="dot"></span>
+          <span id="status">Esperando imagen…</span>
+        </div>
+
+        <!-- Auth -->
+        <div id="authBox" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+          <div id="userPill" class="pill" style="display:none; box-shadow:none; background:rgba(255,255,255,.05)">
+            <span class="dot ok"></span>
+            <span id="userLabel">Logueado</span>
+            <button id="logoutBtn" style="padding:8px 10px; border-radius:10px;">Salir</button>
+          </div>
+
+          <!-- Google button renders here -->
+          <div id="g_id_onload"></div>
+          <div class="g_id_signin"
+              data-type="standard"
+              data-size="large"
+              data-theme="outline"
+              data-text="signin_with"
+              data-shape="rectangular">
+          </div>
+        </div>
+      </div>
     </header>
 
     <div class="grid">
@@ -498,6 +523,56 @@
     const dropZone = document.getElementById('dropZone');
     const debugEl = document.getElementById('debug');
 
+    // === AUTH + BACKEND CONFIG ===
+    const GOOGLE_CLIENT_ID = "1068658646999-j72o9l8k0s0bkdu9iviss6o6p31p8mv4.apps.googleusercontent.com";
+    const BACKEND_BASE_URL = "https://fastapi-production-bf29.up.railway.app"; // sin slash final
+
+    const userPill = document.getElementById("userPill");
+    const userLabel = document.getElementById("userLabel");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    function setAuthUI(isLoggedIn, labelText = "Logueado") {
+      const btn = document.querySelector(".g_id_signin");
+      if (isLoggedIn) {
+        if (btn) btn.style.display = "none";
+        userPill.style.display = "inline-flex";
+        userLabel.textContent = labelText;
+      } else {
+        if (btn) btn.style.display = "block";
+        userPill.style.display = "none";
+      }
+    }
+
+    async function postReadingIfLoggedIn(kills, deaths, assists) {
+      const token = localStorage.getItem("google_id_token");
+      if (!token) return; // no logueado => no postea
+
+      try {
+        const res = await fetch(`${BACKEND_BASE_URL}/readings`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({ kills, deaths, assists }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          console.warn("API error:", res.status, err);
+          // No rompas el UX del OCR por un error de backend
+          return;
+        }
+
+        // opcional: log visual
+        console.log("Reading guardado OK");
+      } catch (e) {
+        console.warn("No pude pegarle al backend:", e);
+      }
+    }
+
+
+
     function setState(state, msg){
       statusEl.textContent = msg;
       dotEl.classList.remove('ok','bad');
@@ -514,6 +589,29 @@
     function clamp01(x){
       return Math.max(0, Math.min(1, x));
     }
+
+    // Google callback (GIS)
+    function handleCredentialResponse(response) {
+      localStorage.setItem("google_id_token", response.credential);
+      setAuthUI(true, "Logueado con Google ✅");
+    }
+    window.handleCredentialResponse = handleCredentialResponse;
+
+    // Init Google button
+    window.addEventListener("load", () => {
+      const onload = document.getElementById("g_id_onload");
+      onload.setAttribute("data-client_id", GOOGLE_CLIENT_ID);
+      onload.setAttribute("data-callback", "handleCredentialResponse");
+
+      const token = localStorage.getItem("google_id_token");
+      setAuthUI(!!token, token ? "Logueado ✅" : "—");
+    });
+
+    // Logout simple (borra token local)
+    logoutBtn?.addEventListener("click", () => {
+      localStorage.removeItem("google_id_token");
+      setAuthUI(false);
+    });
 
     function reset(){
       outEl.textContent = '—';
@@ -667,6 +765,8 @@
         const n1 = parseFloat(matches[0]); // kills
         const n2 = parseFloat(matches[1]); // deaths
         const n3 = parseFloat(matches[2]); // assists
+
+        postReadingIfLoggedIn(Math.trunc(n1), Math.trunc(n2), Math.trunc(n3));
 
         if(!Number.isFinite(n1) || !Number.isFinite(n2) || !Number.isFinite(n3)){
           outEl.textContent = `Números detectados inválidos: ${matches.slice(0,3).join(', ')}`;
