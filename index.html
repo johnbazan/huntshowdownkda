@@ -375,6 +375,35 @@
       width: 100% !important;
       height: 100% !important;
     }
+    .chartBox{
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: var(--radius2);
+      border:1px solid rgba(255,214,170,.14);
+      background: rgba(0,0,0,.18);
+    }
+
+    .chartTitle{
+      font-family: Cinzel, Inter, ui-serif, Georgia, serif;
+      letter-spacing: .8px;
+      text-transform: uppercase;
+      font-size: 12px;
+      color: rgba(255,225,195,.75);
+      margin-bottom: 10px;
+    }
+
+    .chartWrap{
+      height: 260px;           /* <- CLAVE: limita alto */
+      width: 100%;
+      position: relative;
+    }
+
+    .chartWrap canvas{
+      width: 100% !important;
+      height: 100% !important; /* <- CLAVE */
+      display: block;
+    }
+
 
 
     pre{
@@ -520,6 +549,13 @@
             <div class="chartWrap">
               <canvas id="historyChart"></canvas>
             </div>
+            <div class="chartBox">
+              <div class="chartTitle">Progreso acumulado • Kills / Deaths / Assists</div>
+              <div class="chartWrap">
+                <canvas id="kdaProgressChart"></canvas>
+              </div>
+            </div>
+
             </div>
           </div>
         </div>
@@ -563,6 +599,7 @@
     const histSub = document.getElementById("histSub");
 
     let historyChart = null;
+    let progressChart = null;
 
     const GOOGLE_CLIENT_ID = "1068658646999-j72o9l8k0s0bkdu9iviss6o6p31p8mv4.apps.googleusercontent.com";
     const BACKEND_BASE_URL = "https://fastapi-production-bf29.up.railway.app"; // sin slash final
@@ -598,6 +635,75 @@
         userPill.style.display = "none";
       }
     }
+
+    function renderProgressChart(readings) {
+      const canvas = document.getElementById("kdaProgressChart");
+      if (!canvas) return;
+
+      // orden cronológico (viejo -> nuevo)
+      const ordered = [...readings].sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+
+      // labels cortitos
+      const labels = ordered.map(r => {
+        const d = new Date(r.created_at);
+        const mm = String(d.getMonth()+1).padStart(2,'0');
+        const dd = String(d.getDate()).padStart(2,'0');
+        const hh = String(d.getHours()).padStart(2,'0');
+        const mi = String(d.getMinutes()).padStart(2,'0');
+        return `${dd}/${mm} ${hh}:${mi}`;
+      });
+
+      // progreso acumulado
+      let k = 0, d = 0, a = 0;
+      const killsCum = [];
+      const deathsCum = [];
+      const assistsCum = [];
+
+      for (const r of ordered) {
+        k += (r.kills ?? 0);
+        d += (r.deaths ?? 0);
+        a += (r.assists ?? 0);
+        killsCum.push(k);
+        deathsCum.push(d);
+        assistsCum.push(a);
+      }
+
+      const data = {
+        labels,
+        datasets: [
+          { label: "Kills (acum)", data: killsCum, tension: 0.25 },
+          { label: "Deaths (acum)", data: deathsCum, tension: 0.25 },
+          { label: "Assists (acum)", data: assistsCum, tension: 0.25 },
+        ],
+      };
+
+      const options = {
+        responsive: true,
+        maintainAspectRatio: false, // <- CLAVE para que respete chartWrap
+        animation: false,
+        plugins: {
+          legend: { display: true },
+          tooltip: { enabled: true },
+        },
+        scales: {
+          x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
+          y: { beginAtZero: true },
+        },
+      };
+
+      // destruir si existe (evita leaks / duplicados)
+      if (progressChart) {
+        progressChart.destroy();
+        progressChart = null;
+      }
+
+      progressChart = new Chart(canvas.getContext("2d"), {
+        type: "line",
+        data,
+        options,
+      });
+    }
+
 
     let lastPostKey = null;
     let lastPostAt = 0;
@@ -832,6 +938,7 @@
         }
 
         if (count) renderHistoryChart(payload.readings);
+        if (count) renderProgressChart(payload.readings);
       } catch (e) {
         // AbortError es esperado si cancelás el request anterior
         if (String(e?.name) !== "AbortError") console.warn("refreshHistory error:", e);
