@@ -357,6 +357,25 @@
       mix-blend-mode: overlay;
       pointer-events:none;
     }
+    /* === Chart: evitar crecimiento infinito === */
+    .chartWrap{
+      height: 260px;          /* altura fija */
+      max-height: 260px;
+      width: 100%;
+      position: relative;     /* requerido por Chart responsive */
+      overflow: hidden;       /* corta cualquier exceso */
+      border-radius: 14px;
+      border: 1px solid rgba(255,214,170,.14);
+      background: rgba(0,0,0,.28);
+    }
+
+    /* IMPORTANTÍSIMO: el canvas debe obedecer al wrapper */
+    .chartWrap canvas{
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
 
     pre{
       margin:0;
@@ -498,6 +517,7 @@
                 border-radius:14px;
               "
             >
+            <div class="chartWrap">
               <canvas 
                 id="historyChart"
                 style="
@@ -506,6 +526,7 @@
                   display:block;
                 "
               ></canvas>
+              </div>
             </div>
           </div>
         </div>
@@ -744,6 +765,7 @@
         data: { /* ... */ },
         options: {
           responsive: true,
+          animation: false,
           maintainAspectRatio: false, // <- importante si el contenedor tiene altura fija
           plugins: { legend: { display: false } },
           scales: { /* ... */ },
