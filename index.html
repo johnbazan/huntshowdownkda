@@ -537,9 +537,25 @@
       }
     }
 
+    let lastPostKey = null;
+    let lastPostAt = 0;
+
+    function shouldPost(kills, deaths, assists) {
+      const key = `${kills}|${deaths}|${assists}`;
+      const now = Date.now();
+
+      // si es el mismo payload dentro de 1500ms, ignorá
+      if (key === lastPostKey && (now - lastPostAt) < 1500) return false;
+
+      lastPostKey = key;
+      lastPostAt = now;
+      return true;
+    }
+
     async function postReadingIfLoggedIn(kills, deaths, assists) {
       const token = localStorage.getItem("google_id_token");
       if (!token) return; // no logueado => no postea
+      if (!shouldPost(kills, deaths, assists)) return;
 
       try {
         const res = await fetch(`${BACKEND_BASE_URL}/readings`, {
@@ -877,6 +893,8 @@
 
     // ✅ Manejador de paste (más robusto)
     async function onPaste(event){
+      event.preventDefault();
+      event.stopPropagation();
       const cd = event.clipboardData;
       if(!cd){
         debugEl.textContent = 'Debug: clipboardData es null (limitación del navegador).';
@@ -910,8 +928,6 @@
 
     // Escuchamos en varios lugares, en CAPTURE, para que no se pierda.
     window.addEventListener('paste', onPaste, true);
-    document.addEventListener('paste', onPaste, true);
-    dropZone.addEventListener('paste', onPaste, true);
 
     // ✅ Fallback: leer desde clipboard API (requiere HTTPS/localhost y permiso)
     readBtn.addEventListener('click', async () => {
