@@ -400,14 +400,8 @@
           </div>
 
           <!-- Google button renders here -->
-          <div id="g_id_onload"></div>
-          <div class="g_id_signin"
-              data-type="standard"
-              data-size="large"
-              data-theme="outline"
-              data-text="signin_with"
-              data-shape="rectangular">
-          </div>
+        <div id="googleBtn"></div>
+
         </div>
       </div>
     </header>
@@ -597,15 +591,34 @@
     }
     window.handleCredentialResponse = handleCredentialResponse;
 
-    // Init Google button
-    window.addEventListener("load", () => {
-      const onload = document.getElementById("g_id_onload");
-      onload.setAttribute("data-client_id", GOOGLE_CLIENT_ID);
-      onload.setAttribute("data-callback", "handleCredentialResponse");
+    const googleBtn = document.getElementById("googleBtn");
+
+    // Init Google button (imperativo, sin race condition)
+    function initGoogleLogin() {
+      if (!window.google || !google.accounts || !google.accounts.id) {
+        // script todavía no cargó (async/defer)
+        setTimeout(initGoogleLogin, 50);
+        return;
+      }
+
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleCredentialResponse,
+      });
+
+      google.accounts.id.renderButton(googleBtn, {
+        theme: "outline",
+        size: "large",
+        text: "signin_with",
+        shape: "rectangular",
+      });
 
       const token = localStorage.getItem("google_id_token");
       setAuthUI(!!token, token ? "Logueado ✅" : "—");
-    });
+    }
+
+    window.addEventListener("load", initGoogleLogin);
+
 
     // Logout simple (borra token local)
     logoutBtn?.addEventListener("click", () => {
@@ -766,13 +779,13 @@
         const n2 = parseFloat(matches[1]); // deaths
         const n3 = parseFloat(matches[2]); // assists
 
-        postReadingIfLoggedIn(Math.trunc(n1), Math.trunc(n2), Math.trunc(n3));
-
         if(!Number.isFinite(n1) || !Number.isFinite(n2) || !Number.isFinite(n3)){
           outEl.textContent = `Números detectados inválidos: ${matches.slice(0,3).join(', ')}`;
           setState('bad','Listo (inválido).');
           return;
         }
+
+        postReadingIfLoggedIn(Math.trunc(n1), Math.trunc(n2), Math.trunc(n3));
 
         const kdNum = n1;
         const kdDen = n2;
