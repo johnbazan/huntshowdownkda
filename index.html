@@ -638,11 +638,12 @@
       const canvas = document.getElementById("kdaProgressChart");
       if (!canvas) return;
 
-      // orden cronológico (viejo -> nuevo)
-      const ordered = [...readings].sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+      // orden cronológico (viejo → nuevo)
+      const ordered = [...readings].sort(
+        (a,b) => new Date(a.created_at) - new Date(b.created_at)
+      );
 
-      // labels cortitos
-      const labels = ordered.map(r => {
+      const labels = ordered.map((r, i) => {
         const d = new Date(r.created_at);
         const mm = String(d.getMonth()+1).padStart(2,'0');
         const dd = String(d.getDate()).padStart(2,'0');
@@ -651,45 +652,29 @@
         return `${dd}/${mm} ${hh}:${mi}`;
       });
 
-      // progreso acumulado
-      let k = 0, d = 0, a = 0;
-      const killsCum = [];
-      const deathsCum = [];
-      const assistsCum = [];
-
-      for (const r of ordered) {
-        k += (r.kills ?? 0);
-        d += (r.deaths ?? 0);
-        a += (r.assists ?? 0);
-        killsCum.push(k);
-        deathsCum.push(d);
-        assistsCum.push(a);
-      }
+      const kills = ordered.map(r => r.kills ?? 0);
+      const deaths = ordered.map(r => r.deaths ?? 0);
+      const assists = ordered.map(r => r.assists ?? 0);
 
       const data = {
         labels,
         datasets: [
-          { label: "Kills (acum)", data: killsCum, tension: 0.25 },
-          { label: "Deaths (acum)", data: deathsCum, tension: 0.25 },
-          { label: "Assists (acum)", data: assistsCum, tension: 0.25 },
+          { label: "Kills", data: kills, tension: 0.25 },
+          { label: "Deaths", data: deaths, tension: 0.25 },
+          { label: "Assists", data: assists, tension: 0.25 },
         ],
       };
 
       const options = {
         responsive: true,
-        maintainAspectRatio: false, // <- CLAVE para que respete chartWrap
+        maintainAspectRatio: false,
         animation: false,
-        plugins: {
-          legend: { display: true },
-          tooltip: { enabled: true },
-        },
         scales: {
           x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
           y: { beginAtZero: true },
         },
       };
 
-      // destruir si existe (evita leaks / duplicados)
       if (progressChart) {
         progressChart.destroy();
         progressChart = null;
@@ -701,6 +686,7 @@
         options,
       });
     }
+
 
 
     let lastPostKey = null;
