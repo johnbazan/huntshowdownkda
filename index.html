@@ -526,7 +526,7 @@
     const logoutBtn = document.getElementById("logoutBtn");
 
     function setAuthUI(isLoggedIn, labelText = "Logueado") {
-      const btn = document.querySelector(".g_id_signin");
+      const btn = googleBtn; // el div donde se renderiza el botón
       if (isLoggedIn) {
         if (btn) btn.style.display = "none";
         userPill.style.display = "inline-flex";
@@ -588,6 +588,7 @@
     function handleCredentialResponse(response) {
       localStorage.setItem("google_id_token", response.credential);
       setAuthUI(true, "Logueado con Google ✅");
+      focusDropZone(); // 🔥 importante
     }
     window.handleCredentialResponse = handleCredentialResponse;
 
@@ -657,6 +658,18 @@
     // IMPORTANTE: aseguramos foco para que Ctrl+V caiga acá
     dropZone.addEventListener('click', () => dropZone.focus());
     window.addEventListener('load', () => dropZone.focus());
+
+    // Si volvés a la pestaña, recuperá foco
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) focusDropZone();
+    });
+
+    // Si hacés click en cualquier lado que no sea un input, recuperá foco
+    document.addEventListener('click', (e) => {
+      const tag = (e.target?.tagName || "").toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "button") return;
+      focusDropZone();
+    }, true);
 
     copyBtn.addEventListener('click', async () => {
       try{
@@ -886,6 +899,13 @@
       }
 
       await handleImageFile(file, 'paste');
+    }
+
+    function focusDropZone(){
+      // Delay chiquito para ganarle al iframe / repaint
+      setTimeout(() => {
+        try { dropZone.focus(); } catch {}
+      }, 0);
     }
 
     // Escuchamos en varios lugares, en CAPTURE, para que no se pierda.
