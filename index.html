@@ -663,25 +663,30 @@
       if (historyChart) { historyChart.destroy(); historyChart = null; }
     });
 
-    // Logout simple (borra token local)
-    logoutBtn?.addEventListener("click", () => {
-      localStorage.removeItem("google_id_token");
-      setAuthUI(false);
-    });
-
     function computeKD(r) {
       return r.deaths === 0 ? null : (r.kills / r.deaths);
     }
     function computeKDA(r) {
       return r.deaths === 0 ? null : ((r.kills + r.assists) / r.deaths);
     }
+    let meInFlight = false;
+    let meAbort = null;
+    let lastMeFetchAt = 0;
+    const ME_MIN_INTERVAL_MS = 1200; // 1.2s, ajustalo si querés
 
     async function fetchMyReadings() {
       const token = localStorage.getItem("google_id_token");
       if (!token) return null;
 
+      // abort request previo si todavía está corriendo
+      if (meAbort) {
+        try { meAbort.abort(); } catch {}
+      }
+      meAbort = new AbortController();
+
       const res = await fetch(`${BACKEND_BASE_URL}/me`, {
-        headers: { "Authorization": `Bearer ${token}` }
+        headers: { "Authorization": `Bearer ${token}` },
+        signal: meAbort.signal,
       });
 
       if (!res.ok) {
@@ -691,6 +696,7 @@
       }
       return await res.json();
     }
+
 
     function renderHistoryChart(readingsDesc) {
       if (!historyCanvas) return;
@@ -736,19 +742,42 @@
     }
 
     async function refreshHistoryIfLoggedIn() {
-      const payload = await fetchMyReadings();
-      if (!payload || !payload.readings) {
-        if (histSub) histSub.textContent = "Logueate para ver tu historial.";
-        return;
+      const token = localStorage.getItem("google_id_token");
+      if (!token) return;
+
+      // lock: si ya hay uno corriendo, no dispares otro
+      if (meInFlight) return;
+
+      // throttle: evita spam si lo llaman muy seguido
+      const now = Date.now();
+      if (now - lastMeFetchAt < ME_MIN_INTERVAL_MS) return;
+      lastMeFetchAt = now;
+
+      meInFlight = true;
+      try {
+        const payload = await fetchMyReadings();
+
+        if (!payload || !payload.readings) {
+          if (histSub) histSub.textContent = "Logueate para ver tu historial.";
+          return;
+        }
+
+        const count = payload.readings.length;
+        if (histSub) {
+          histSub.textContent = count
+            ? `Mostrando ${Math.min(20, count)} lecturas (más viejo → más nuevo).`
+            : "Todavía no tenés lecturas guardadas.";
+        }
+
+        if (count) renderHistoryChart(payload.readings);
+      } catch (e) {
+        // AbortError es esperado si cancelás el request anterior
+        if (String(e?.name) !== "AbortError") console.warn("refreshHistory error:", e);
+      } finally {
+        meInFlight = false;
       }
-
-      const count = payload.readings.length;
-      if (histSub) histSub.textContent = count
-        ? `Mostrando ${Math.min(20, count)} lecturas (más viejo → más nuevo).`
-        : "Todavía no tenés lecturas guardadas.";
-
-      if (count) renderHistoryChart(payload.readings);
     }
+
 
 
     function reset(){
