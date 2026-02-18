@@ -142,6 +142,7 @@
       white-space:nowrap;
       backdrop-filter: blur(6px);
     }
+    
 
     .dot{
       width:10px; height:10px; border-radius:999px;
@@ -487,8 +488,25 @@
           <div class="kpi" style="min-height:auto;">
             <div class="label">Histórico (últimos 20)</div>
             <div class="sub" id="histSub">Logueate para ver tu historial.</div>
-            <div style="height:10px"></div>
-            <canvas id="historyChart" height="120"></canvas>
+            <div 
+              style="
+                height:260px;
+                max-height:260px;
+                width:100%;
+                overflow:hidden;
+                position:relative;
+                border-radius:14px;
+              "
+            >
+              <canvas 
+                id="historyChart"
+                style="
+                  width:100% !important;
+                  height:100% !important;
+                  display:block;
+                "
+              ></canvas>
+            </div>
           </div>
         </div>
       </section>
@@ -698,48 +716,41 @@
     }
 
 
-    function renderHistoryChart(readingsDesc) {
-      if (!historyCanvas) return;
+    function renderHistoryChart(readings) {
+      const box = document.getElementById("chartBox");      // el contenedor donde querés el chart
+      const canvasId = "historyCanvas";
 
-      // readings vienen desc (más nuevo primero) => los invertimos para gráfico izquierda->derecha
-      const readings = [...readingsDesc].reverse();
-
-      const labels = readings.map((r, idx) => {
-        // etiqueta simple: #1..#20 (si querés fecha, lo cambiamos)
-        return `${idx + 1}`;
-      });
-
-      const kd = readings.map(r => computeKD(r));
-      const kda = readings.map(r => computeKDA(r));
-
-      // Reset chart si ya existe
+      // 1) asegurate de destruir el chart anterior
       if (historyChart) {
         historyChart.destroy();
         historyChart = null;
       }
 
-      historyChart = new Chart(historyCanvas, {
+      // 2) Reusar el MISMO canvas (si no existe, lo creamos)
+      let canvas = document.getElementById(canvasId);
+      if (!canvas) {
+        // clave: NO ir agregando cosas sin limpiar
+        box.innerHTML = "";          // <- evita crecimiento infinito
+        canvas = document.createElement("canvas");
+        canvas.id = canvasId;
+        box.appendChild(canvas);
+      }
+
+      const ctx = canvas.getContext("2d");
+
+      // ... armás labels/data ...
+      historyChart = new Chart(ctx, {
         type: "line",
-        data: {
-          labels,
-          datasets: [
-            { label: "KD", data: kd, spanGaps: true, tension: 0.25 },
-            { label: "KDA", data: kda, spanGaps: true, tension: 0.25 },
-          ],
-        },
+        data: { /* ... */ },
         options: {
           responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: true },
-            tooltip: { enabled: true },
-          },
-          scales: {
-            y: { beginAtZero: true },
-          },
-        },
+          maintainAspectRatio: false, // <- importante si el contenedor tiene altura fija
+          plugins: { legend: { display: false } },
+          scales: { /* ... */ },
+        }
       });
     }
+
 
     async function refreshHistoryIfLoggedIn() {
       const token = localStorage.getItem("google_id_token");
