@@ -571,6 +571,22 @@
     const userLabel = document.getElementById("userLabel");
     const logoutBtn = document.getElementById("logoutBtn");
 
+    function authExpired(message = "Tu sesión con Google expiró. Volvé a loguearte.") {
+      // 1) avisos UX
+      setState("bad", message);
+
+      // 2) borrá token local y mostrà botón login
+      localStorage.removeItem("google_id_token");
+      setAuthUI(false);
+
+      // 3) opcional: si GIS está disponible, podés “soltar” selección
+      try {
+        if (window.google?.accounts?.id?.disableAutoSelect) {
+          google.accounts.id.disableAutoSelect();
+        }
+      } catch (_) {}
+    }
+
     function setAuthUI(isLoggedIn, labelText = "Logueado") {
       const btn = googleBtn; // el div donde se renderiza el botón
       if (isLoggedIn) {
@@ -601,7 +617,6 @@
     async function postReadingIfLoggedIn(kills, deaths, assists) {
       const token = localStorage.getItem("google_id_token");
       if (!token) return; // no logueado => no postea
-      if (!shouldPost(kills, deaths, assists)) return;
 
       try {
         const res = await fetch(`${BACKEND_BASE_URL}/readings`, {
@@ -614,20 +629,23 @@
         });
 
         if (!res.ok) {
+          // ⛔ Si el backend dice 401 => token vencido/invalid
+          if (res.status === 401) {
+            authExpired("Token inválido/vencido. Volvé a loguearte con Google.");
+            return;
+          }
+
           const err = await res.json().catch(() => ({}));
           console.warn("API error:", res.status, err);
-          // No rompas el UX del OCR por un error de backend
           return;
         }
 
-        refreshHistoryIfLoggedIn();
-
-        // opcional: log visual
         console.log("Reading guardado OK");
       } catch (e) {
         console.warn("No pude pegarle al backend:", e);
       }
     }
+
 
 
 
@@ -652,8 +670,8 @@
     function handleCredentialResponse(response) {
       localStorage.setItem("google_id_token", response.credential);
       setAuthUI(true, "Logueado con Google ✅");
-      focusDropZone(); // 🔥 importante
       refreshHistoryIfLoggedIn();
+      focusDropZone(); // 🔥 importante
 
     }
     window.handleCredentialResponse = handleCredentialResponse;
@@ -684,6 +702,7 @@
 
       const token = localStorage.getItem("google_id_token");
       setAuthUI(!!token, token ? "Logueado ✅" : "—");
+      if (token) refreshHistoryIfLoggedIn();
     }
 
     window.addEventListener("load", initGoogleLogin);
@@ -720,6 +739,11 @@
         headers: { "Authorization": `Bearer ${token}` },
         signal: meAbort.signal,
       });
+
+      if (res.status === 401) {
+        authExpired("Sesión vencida. Volvé a loguearte para ver tu histórico.");
+        return;
+      }
 
       if (!res.ok) {
         const err = await res.text().catch(() => "");
@@ -798,6 +822,7 @@
           if (histSub) histSub.textContent = "Logueate para ver tu historial.";
           return;
         }
+        
 
         const count = payload.readings.length;
         if (histSub) {
