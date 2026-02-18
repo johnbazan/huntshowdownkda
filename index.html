@@ -561,7 +561,11 @@
 
     // === AUTH + BACKEND CONFIG ===
     const histSub = document.getElementById("histSub");
-    const historyCanvas = document.getElementById("historyChart");
+    const el = document.getElementById("historyChart");
+    if (!el) {
+      console.warn("No existe #historyChart en el DOM");
+      return;
+    }
     let historyChart = null;
 
     const GOOGLE_CLIENT_ID = "1068658646999-j72o9l8k0s0bkdu9iviss6o6p31p8mv4.apps.googleusercontent.com";
