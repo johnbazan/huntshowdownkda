@@ -731,40 +731,51 @@
 
 
     function renderHistoryChart(readings) {
-      const box = document.getElementById("chartBox");      // el contenedor donde querés el chart
-      const canvasId = "historyCanvas";
+      const canvas = document.getElementById("historyChart");
+      if (!canvas) return;
 
-      // 1) asegurate de destruir el chart anterior
+      const ctx = canvas.getContext("2d");
+
+      // destruir si existe
       if (historyChart) {
         historyChart.destroy();
         historyChart = null;
       }
 
-      // 2) Reusar el MISMO canvas (si no existe, lo creamos)
-      let canvas = document.getElementById(canvasId);
-      if (!canvas) {
-        // clave: NO ir agregando cosas sin limpiar
-        box.innerHTML = "";          // <- evita crecimiento infinito
-        canvas = document.createElement("canvas");
-        canvas.id = canvasId;
-        box.appendChild(canvas);
-      }
+      // vienen desc → los invertimos
+      const items = [...readings].reverse();
 
-      const ctx = canvas.getContext("2d");
+      const labels = items.map((_, i) => `${i + 1}`);
+      const kdData = items.map(r => computeKD(r));
+      const kdaData = items.map(r => computeKDA(r));
 
-      // ... armás labels/data ...
       historyChart = new Chart(ctx, {
         type: "line",
-        data: { /* ... */ },
+        data: {
+          labels,
+          datasets: [
+            {
+              label: "KD",
+              data: kdData,
+              borderWidth: 2,
+              tension: 0.25,
+            },
+            {
+              label: "KDA",
+              data: kdaData,
+              borderWidth: 2,
+              tension: 0.25,
+            }
+          ]
+        },
         options: {
           responsive: true,
-          animation: false,
-          maintainAspectRatio: false, // <- importante si el contenedor tiene altura fija
-          plugins: { legend: { display: false } },
-          scales: { /* ... */ },
+          maintainAspectRatio: false,
+          animation: false
         }
       });
     }
+
 
 
     async function refreshHistoryIfLoggedIn() {
