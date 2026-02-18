@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;650;800&family=Inter:wght@400;500;650;800&display=swap" rel="stylesheet">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
   <title>OCR KDA / KD desde Portapapeles</title>
   
@@ -480,6 +481,15 @@
 
           <div style="height:12px"></div>
           <pre id="out">—</pre>
+
+          <div style="height:12px"></div>
+
+          <div class="kpi" style="min-height:auto;">
+            <div class="label">Histórico (últimos 20)</div>
+            <div class="sub" id="histSub">Logueate para ver tu historial.</div>
+            <div style="height:10px"></div>
+            <canvas id="historyChart" height="120"></canvas>
+          </div>
         </div>
       </section>
     </div>
@@ -518,6 +528,10 @@
     const debugEl = document.getElementById('debug');
 
     // === AUTH + BACKEND CONFIG ===
+    const histSub = document.getElementById("histSub");
+    const historyCanvas = document.getElementById("historyChart");
+    let historyChart = null;
+
     const GOOGLE_CLIENT_ID = "1068658646999-j72o9l8k0s0bkdu9iviss6o6p31p8mv4.apps.googleusercontent.com";
     const BACKEND_BASE_URL = "https://fastapi-production-bf29.up.railway.app"; // sin slash final
 
@@ -574,6 +588,8 @@
           return;
         }
 
+        refreshHistoryIfLoggedIn();
+
         // opcional: log visual
         console.log("Reading guardado OK");
       } catch (e) {
@@ -605,10 +621,14 @@
       localStorage.setItem("google_id_token", response.credential);
       setAuthUI(true, "Logueado con Google ✅");
       focusDropZone(); // 🔥 importante
+      refreshHistoryIfLoggedIn();
+
     }
     window.handleCredentialResponse = handleCredentialResponse;
 
     const googleBtn = document.getElementById("googleBtn");
+
+    
 
     // Init Google button (imperativo, sin race condition)
     function initGoogleLogin() {
@@ -635,13 +655,101 @@
     }
 
     window.addEventListener("load", initGoogleLogin);
-
+  
+    logoutBtn?.addEventListener("click", () => {
+      localStorage.removeItem("google_id_token");
+      setAuthUI(false);
+      if (histSub) histSub.textContent = "Logueate para ver tu historial.";
+      if (historyChart) { historyChart.destroy(); historyChart = null; }
+    });
 
     // Logout simple (borra token local)
     logoutBtn?.addEventListener("click", () => {
       localStorage.removeItem("google_id_token");
       setAuthUI(false);
     });
+
+    function computeKD(r) {
+      return r.deaths === 0 ? null : (r.kills / r.deaths);
+    }
+    function computeKDA(r) {
+      return r.deaths === 0 ? null : ((r.kills + r.assists) / r.deaths);
+    }
+
+    async function fetchMyReadings() {
+      const token = localStorage.getItem("google_id_token");
+      if (!token) return null;
+
+      const res = await fetch(`${BACKEND_BASE_URL}/me`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+
+      if (!res.ok) {
+        const err = await res.text().catch(() => "");
+        console.warn("GET /me failed:", res.status, err);
+        return null;
+      }
+      return await res.json();
+    }
+
+    function renderHistoryChart(readingsDesc) {
+      if (!historyCanvas) return;
+
+      // readings vienen desc (más nuevo primero) => los invertimos para gráfico izquierda->derecha
+      const readings = [...readingsDesc].reverse();
+
+      const labels = readings.map((r, idx) => {
+        // etiqueta simple: #1..#20 (si querés fecha, lo cambiamos)
+        return `${idx + 1}`;
+      });
+
+      const kd = readings.map(r => computeKD(r));
+      const kda = readings.map(r => computeKDA(r));
+
+      // Reset chart si ya existe
+      if (historyChart) {
+        historyChart.destroy();
+        historyChart = null;
+      }
+
+      historyChart = new Chart(historyCanvas, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [
+            { label: "KD", data: kd, spanGaps: true, tension: 0.25 },
+            { label: "KDA", data: kda, spanGaps: true, tension: 0.25 },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: true },
+            tooltip: { enabled: true },
+          },
+          scales: {
+            y: { beginAtZero: true },
+          },
+        },
+      });
+    }
+
+    async function refreshHistoryIfLoggedIn() {
+      const payload = await fetchMyReadings();
+      if (!payload || !payload.readings) {
+        if (histSub) histSub.textContent = "Logueate para ver tu historial.";
+        return;
+      }
+
+      const count = payload.readings.length;
+      if (histSub) histSub.textContent = count
+        ? `Mostrando ${Math.min(20, count)} lecturas (más viejo → más nuevo).`
+        : "Todavía no tenés lecturas guardadas.";
+
+      if (count) renderHistoryChart(payload.readings);
+    }
+
 
     function reset(){
       outEl.textContent = '—';
