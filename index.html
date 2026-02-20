@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
@@ -676,6 +677,20 @@
       }
     }
 
+    function getEmailFromIdToken(idToken) {
+      try {
+        if (!idToken || !idToken.includes(".")) return null;
+        const payloadB64 = idToken.split(".")[1];
+        const normalized = payloadB64.replace(/-/g, "+").replace(/_/g, "/");
+        const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), "=");
+        const json = atob(padded);
+        const payload = JSON.parse(json);
+        return payload?.email || null;
+      } catch (_) {
+        return null;
+      }
+    }
+
     function destroyMetricCharts() {
       Object.values(metricsCharts).forEach((chart) => {
         try { chart?.destroy(); } catch (_) {}
@@ -726,9 +741,9 @@
       const chartConfig = [
         { id: "chartKda", label: "KDA", color: "#4ed5ff", data: ordered.map((r) => computeKDA(r)), startAtZero: false },
         { id: "chartKd", label: "KD", color: "#6d7bff", data: ordered.map((r) => computeKD(r)), startAtZero: false },
-        { id: "chartKills", label: "Kills", color: "#4be39d", data: ordered.map((r) => r.kills ?? 0), startAtZero: true },
-        { id: "chartDeaths", label: "Deaths", color: "#ff5f85", data: ordered.map((r) => r.deaths ?? 0), startAtZero: true },
-        { id: "chartAssists", label: "Assists", color: "#ffd166", data: ordered.map((r) => r.assists ?? 0), startAtZero: true },
+        { id: "chartKills", label: "Kills", color: "#4be39d", data: ordered.map((r) => r.kills ?? 0), startAtZero: false, sensitiveScale: true },
+        { id: "chartDeaths", label: "Deaths", color: "#ff5f85", data: ordered.map((r) => r.deaths ?? 0), startAtZero: false, sensitiveScale: true },
+        { id: "chartAssists", label: "Assists", color: "#ffd166", data: ordered.map((r) => r.assists ?? 0), startAtZero: false, sensitiveScale: true },
       ];
 
       destroyMetricCharts();
@@ -736,6 +751,20 @@
       chartConfig.forEach((cfg) => {
         const canvas = document.getElementById(cfg.id);
         if (!canvas) return;
+        const options = chartOptions(cfg.startAtZero);
+
+        if (cfg.sensitiveScale) {
+          const values = cfg.data.filter((v) => Number.isFinite(v));
+          if (values.length) {
+            const min = Math.min(...values);
+            const max = Math.max(...values);
+            const range = max - min;
+            const pad = range > 0 ? Math.max(1, range * 0.2) : Math.max(1, max * 0.02);
+            options.scales.y.min = Math.max(0, min - pad);
+            options.scales.y.max = max + pad;
+            options.scales.y.ticks.precision = 0;
+          }
+        }
 
         metricsCharts[cfg.id] = new Chart(canvas.getContext("2d"), {
           type: "line",
@@ -752,7 +781,7 @@
               },
             ],
           },
-          options: chartOptions(cfg.startAtZero),
+          options,
         });
       });
     }
@@ -843,7 +872,8 @@
     // Google callback (GIS)
     function handleCredentialResponse(response) {
       localStorage.setItem("google_id_token", response.credential);
-      setAuthUI(true, "Signed in [OK]");
+      const email = getEmailFromIdToken(response.credential);
+      setAuthUI(true, email ? `Signed in [OK] ${email}` : "Signed in [OK]");
       refreshHistoryIfLoggedIn();
       focusDropZone(); // keep paste target focused
 
@@ -875,7 +905,8 @@
       });
 
       const token = localStorage.getItem("google_id_token");
-      setAuthUI(!!token, token ? "Signed in [OK]" : "-");
+      const email = getEmailFromIdToken(token);
+      setAuthUI(!!token, token ? (email ? `Signed in [OK] ${email}` : "Signed in [OK]") : "-");
       if (token) refreshHistoryIfLoggedIn();
     }
 
@@ -1286,10 +1317,6 @@
   </script>
 </body>
 </html>
-
-
-
-
 
 
 
