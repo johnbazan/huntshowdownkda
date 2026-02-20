@@ -1,35 +1,35 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;650;800&family=Inter:wght@400;500;650;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-  <title>OCR KDA / KD desde Portapapeles</title>
+  <title>Hunt Stats Tracker</title>
   
   
   <style>
     :root{
-      --bg0:#060504;
-      --bg1:#0f0b09;
-      --bg2:#15100d;
-      --paper: rgba(255,232,199,.07);
-      --card: rgba(16, 10, 8, .76);
-      --stroke: rgba(255,214,170,.16);
-      --stroke2: rgba(0,0,0,.70);
-      --text: rgba(255, 244, 230, .92);
-      --muted: rgba(255, 225, 195, .68);
-      --gold:#d2a85a;
-      --rust:#e2522c;
-      --ok:#6ee7a8;
-      --bad:#ff6b7a;
-      --shadow: 0 26px 70px rgba(0,0,0,.70);
-      --radius:18px;
+      --bg0:#05060d;
+      --bg1:#0b1022;
+      --bg2:#151d3b;
+      --surface: rgba(10,16,34,.74);
+      --surface-2: rgba(7,12,26,.82);
+      --stroke: rgba(106,181,255,.24);
+      --stroke-soft: rgba(106,181,255,.12);
+      --text: rgba(236,245,255,.95);
+      --muted: rgba(184,209,238,.74);
+      --accent:#4ed5ff;
+      --accent-2:#6d7bff;
+      --good:#4be39d;
+      --bad:#ff5f85;
+      --radius:20px;
       --radius2:14px;
+      --shadow: 0 24px 60px rgba(0,0,0,.45);
     }
 
     *{ box-sizing:border-box; }
@@ -38,388 +38,422 @@
     body{
       margin:0;
       min-height:100vh;
-      padding:28px;
+      padding:24px;
       color:var(--text);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      font-family: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, Segoe UI, Arial, sans-serif;
       background:
-        radial-gradient(1400px 800px at 50% -10%, rgba(210,168,90,.10), transparent 62%),
-        radial-gradient(1100px 650px at 20% 8%, rgba(226,82,44,.10), transparent 58%),
-        radial-gradient(1100px 650px at 86% 18%, rgba(110,231,168,.06), transparent 62%),
-        radial-gradient(1300px 900px at 50% 115%, rgba(0,0,0,.72), transparent 64%),
+        radial-gradient(1200px 680px at 10% -10%, rgba(78,213,255,.14), transparent 62%),
+        radial-gradient(1100px 620px at 90% 8%, rgba(109,123,255,.17), transparent 60%),
+        radial-gradient(800px 600px at 50% 115%, rgba(13,187,141,.14), transparent 72%),
         linear-gradient(180deg, var(--bg2), var(--bg0));
       background-attachment: fixed;
       position:relative;
       overflow-x:hidden;
     }
 
-    /* smoke/noise overlay */
     body::before{
       content:"";
-      position:fixed; inset:0;
-      background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNDAiIGhlaWdodD0iMjQwIj4KPGZpbHRlciBpZD0ibiI+CiAgPGZlVHVyYnVsZW5jZSB0eXBlPSJmcmFjdGFsTm9pc2UiIGJhc2VGcmVxdWVuY3k9IjAuOSIgbnVtT2N0YXZlcz0iMyIgc3RpdGNoVGlsZXM9InN0aXRjaCIvPgogIDxmZUNvbG9yTWF0cml4IHR5cGU9Im1hdHJpeCIgdmFsdWVzPSIxIDAgMCAwIDAgIDAgMSAwIDAgMCAgMCAwIDEgMCAwICAwIDAgMCAuMTggMCIvPgo8L2ZpbHRlcj4KPHJlY3Qgd2lkdGg9IjI0MCIgaGVpZ2h0PSIyNDAiIGZpbHRlcj0idXJsKCNuKSIvPgo8L3N2Zz4=");
-      opacity:.55;
-      mix-blend-mode: overlay;
+      position:fixed;
+      inset:0;
       pointer-events:none;
-      z-index:0;
-    }
-    body::after{
-      content:"";
-      position:fixed; inset:-30vh -30vw;
       background:
-        radial-gradient(closest-side at 30% 40%, rgba(255,255,255,.06), transparent 65%),
-        radial-gradient(closest-side at 75% 30%, rgba(255,255,255,.05), transparent 70%),
-        radial-gradient(closest-side at 55% 75%, rgba(255,255,255,.035), transparent 70%);
-      filter: blur(18px);
-      opacity:.55;
-      pointer-events:none;
+        linear-gradient(115deg, rgba(255,255,255,.03), transparent 24%),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.016) 0 1px, transparent 1px 62px);
+      opacity:.5;
       z-index:0;
-      animation: drift 14s ease-in-out infinite alternate;
-    }
-    @keyframes drift{
-      from{ transform: translate3d(-1.5%, -1%, 0) scale(1.02); }
-      to{ transform: translate3d(1.5%, 1.2%, 0) scale(1.03); }
     }
 
-    .wrap{ max-width:1140px; margin:0 auto; position:relative; z-index:1; }
+    .wrap{ width:100%; max-width:none; margin:0 auto; position:relative; z-index:1; }
 
     header{
       display:flex;
-      gap:18px;
+      gap:16px;
       align-items:flex-start;
       justify-content:space-between;
-      margin-bottom:18px;
+      margin-bottom:16px;
+      padding:18px;
+      border-radius:var(--radius);
+      border:1px solid var(--stroke);
+      background:
+        linear-gradient(140deg, rgba(78,213,255,.08), transparent 46%),
+        linear-gradient(220deg, rgba(109,123,255,.10), transparent 40%),
+        var(--surface);
+      box-shadow:var(--shadow);
     }
 
     .brand{
       display:flex;
       flex-direction:column;
-      gap:10px;
+      gap:8px;
       max-width:860px;
     }
 
     h1{
-      font-family: Cinzel, Inter, ui-serif, Georgia, serif;
-      letter-spacing: 1.4px;
-      font-size: clamp(24px, 3.4vw, 40px);
       margin:0;
-      text-transform:uppercase;
-      text-shadow: 0 3px 30px rgba(0,0,0,.75);
-      position:relative;
-      padding-bottom:10px;
-    }
-
-    /* Ornate divider like a "sigil" */
-    h1::after{
-      content:"";
-      position:absolute;
-      left:0; right:0; bottom:0;
-      height:10px;
-      background:
-        linear-gradient(90deg, transparent 0%, rgba(210,168,90,.65) 15%, rgba(210,168,90,.12) 50%, rgba(210,168,90,.65) 85%, transparent 100%);
-      mask-image: radial-gradient(circle at 50% 50%, #000 0 36%, transparent 38%);
-      opacity:.55;
+      font-family: "Orbitron", "Space Grotesk", sans-serif;
+      font-size: clamp(24px, 3.5vw, 42px);
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      line-height:1.05;
+      text-shadow: 0 0 18px rgba(78,213,255,.25);
     }
 
     .subtitle{
-      margin-top:0;
+      margin:0;
       color:var(--muted);
-      line-height:1.55;
-      font-size: 14px;
+      line-height:1.5;
+      font-size:14px;
     }
 
     .pill{
       display:inline-flex;
       align-items:center;
-      gap:10px;
-      padding:10px 12px;
+      gap:9px;
+      padding:9px 12px;
       border-radius:999px;
-      background:
-        linear-gradient(180deg, rgba(255,232,199,.10), rgba(0,0,0,.32));
-      border: 1px solid rgba(255,214,170,.18);
-      box-shadow: 0 18px 45px rgba(0,0,0,.52);
+      border:1px solid var(--stroke);
+      background:rgba(10,16,34,.55);
       color:var(--muted);
-      font-size:13px;
-      white-space:nowrap;
-      backdrop-filter: blur(6px);
+      font-size:12px;
+      backdrop-filter: blur(5px);
     }
-    
 
     .dot{
-      width:10px; height:10px; border-radius:999px;
-      background:var(--gold);
-      box-shadow:0 0 0 4px rgba(210,168,90,.18), 0 0 26px rgba(210,168,90,.22);
+      width:10px;
+      height:10px;
+      border-radius:999px;
+      background:var(--accent);
+      box-shadow:0 0 0 4px rgba(78,213,255,.16), 0 0 16px rgba(78,213,255,.3);
     }
-    .dot.ok{ background:var(--ok); box-shadow:0 0 0 4px rgba(110,231,168,.16), 0 0 26px rgba(110,231,168,.20); }
-    .dot.bad{ background:var(--bad); box-shadow:0 0 0 4px rgba(255,107,122,.16), 0 0 26px rgba(255,107,122,.22); }
+    .dot.ok{
+      background:var(--good);
+      box-shadow:0 0 0 4px rgba(75,227,157,.16), 0 0 16px rgba(75,227,157,.28);
+    }
+    .dot.bad{
+      background:var(--bad);
+      box-shadow:0 0 0 4px rgba(255,95,133,.14), 0 0 16px rgba(255,95,133,.28);
+    }
 
-    .grid{ display:grid; grid-template-columns:1.25fr .75fr; gap:16px; align-items:start; }
-    @media (max-width:980px){ .grid{ grid-template-columns:1fr; } }
+    .grid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:16px;
+      align-items:start;
+    }
+    @media (max-width:1000px){
+      .grid{ grid-template-columns:1fr; }
+      header{ flex-direction:column; }
+    }
 
     .card{
       position:relative;
-      background:
-        linear-gradient(180deg, rgba(255,232,199,.07), rgba(0,0,0,.32)),
-        radial-gradient(900px 260px at 20% -10%, rgba(210,168,90,.12), transparent 60%),
-        radial-gradient(900px 260px at 90% -10%, rgba(226,82,44,.10), transparent 62%),
-        var(--card);
-      border: 1px solid rgba(255,214,170,.16);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow:hidden;
-    }
-
-    /* Corner ornaments */
-    .card::before{
-      content:"";
-      position:absolute; inset:0;
-      pointer-events:none;
       border-radius:var(--radius);
-      background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMjAiIGhlaWdodD0iMjIwIiB2aWV3Qm94PSIwIDAgMjIwIDIyMCI+CjxnIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjE0LDE3MCwuMzUpIiBzdHJva2Utd2lkdGg9IjIiIG9wYWNpdHk9Ii41NSI+CiAgPHBhdGggZD0iTTEwIDU1IEMyNSAxNSwgNjAgMTAsIDg1IDIwIiAvPgogIDxwYXRoIGQ9Ik0xMCA4NSBDMTUgNjAsIDM1IDQ1LCA1NSA0MCIgLz4KICA8cGF0aCBkPSJNMTY1IDIwIEMxOTAgMTAsIDIwNSAyNSwgMjEwIDU1IiAvPgogIDxwYXRoIGQ9Ik0xNjUgNDAgQzE4NSA0NSwgMjA1IDYwLCAyMTAgODUiIC8+CiAgPHBhdGggZD0iTTIwIDE2NSBDMTAgMTkwLCAyNSAyMDUsIDU1IDIxMCIgLz4KICA8cGF0aCBkPSJNNDAgMTY1IEM0NSAxODUsIDYwIDIwNSwgODUgMjEwIiAvPgogIDxwYXRoIGQ9Ik0xMzUgMjEwIEMxNjAgMjA1LCAxOTAgMTkwLCAyMDAgMTY1IiAvPgogIDxwYXRoIGQ9Ik0xMzUgMTkwIEMxNTUgMTg1LCAxODAgMTcwLCAxOTAgMTU1IiAvPgo8L2c+Cjwvc3ZnPg=="), url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMjAiIGhlaWdodD0iMjIwIiB2aWV3Qm94PSIwIDAgMjIwIDIyMCI+CjxnIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjE0LDE3MCwuMzUpIiBzdHJva2Utd2lkdGg9IjIiIG9wYWNpdHk9Ii41NSI+CiAgPHBhdGggZD0iTTEwIDU1IEMyNSAxNSwgNjAgMTAsIDg1IDIwIiAvPgogIDxwYXRoIGQ9Ik0xMCA4NSBDMTUgNjAsIDM1IDQ1LCA1NSA0MCIgLz4KICA8cGF0aCBkPSJNMTY1IDIwIEMxOTAgMTAsIDIwNSAyNSwgMjEwIDU1IiAvPgogIDxwYXRoIGQ9Ik0xNjUgNDAgQzE4NSA0NSwgMjA1IDYwLCAyMTAgODUiIC8+CiAgPHBhdGggZD0iTTIwIDE2NSBDMTAgMTkwLCAyNSAyMDUsIDU1IDIxMCIgLz4KICA8cGF0aCBkPSJNNDAgMTY1IEM0NSAxODUsIDYwIDIwNSwgODUgMjEwIiAvPgogIDxwYXRoIGQ9Ik0xMzUgMjEwIEMxNjAgMjA1LCAxOTAgMTkwLCAyMDAgMTY1IiAvPgogIDxwYXRoIGQ9Ik0xMzUgMTkwIEMxNTUgMTg1LCAxODAgMTcwLCAxOTAgMTU1IiAvPgo8L2c+Cjwvc3ZnPg=="), url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMjAiIGhlaWdodD0iMjIwIiB2aWV3Qm94PSIwIDAgMjIwIDIyMCI+CjxnIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjE0LDE3MCwuMzUpIiBzdHJva2Utd2lkdGg9IjIiIG9wYWNpdHk9Ii41NSI+CiAgPHBhdGggZD0iTTEwIDU1IEMyNSAxNSwgNjAgMTAsIDg1IDIwIiAvPgogIDxwYXRoIGQ9Ik0xMCA4NSBDMTUgNjAsIDM1IDQ1LCA1NSA0MCIgLz4KICA8cGF0aCBkPSJNMTY1IDIwIEMxOTAgMTAsIDIwNSAyNSwgMjEwIDU1IiAvPgogIDxwYXRoIGQ9Ik0xNjUgNDAgQzE4NSA0NSwgMjA1IDYwLCAyMTAgODUiIC8+CiAgPHBhdGggZD0iTTIwIDE2NSBDMTAgMTkwLCAyNSAyMDUsIDU1IDIxMCIgLz4KICA8cGF0aCBkPSJNNDAgMTY1IEM0NSAxODUsIDYwIDIwNSwgODUgMjEwIiAvPgogIDxwYXRoIGQ9Ik0xMzUgMjEwIEMxNjAgMjA1LCAxOTAgMTkwLCAyMDAgMTY1IiAvPgogIDxwYXRoIGQ9Ik0xMzUgMTkwIEMxNTUgMTg1LCAxODAgMTcwLCAxOTAgMTU1IiAvPgo8L2c+Cjwvc3ZnPg=="), url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMjAiIGhlaWdodD0iMjIwIiB2aWV3Qm94PSIwIDAgMjIwIDIyMCI+CjxnIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjE0LDE3MCwuMzUpIiBzdHJva2Utd2lkdGg9IjIiIG9wYWNpdHk9Ii41NSI+CiAgPHBhdGggZD0iTTEwIDU1IEMyNSAxNSwgNjAgMTAsIDg1IDIwIiAvPgogIDxwYXRoIGQ9Ik0xMCA4NSBDMTUgNjAsIDM1IDQ1LCA1NSA0MCIgLz4KICA8cGF0aCBkPSJNMTY1IDIwIEMxOTAgMTAsIDIwNSAyNSwgMjEwIDU1IiAvPgogIDxwYXRoIGQ9Ik0xNjUgNDAgQzE4NSA0NSwgMjA1IDYwLCAyMTAgODUiIC8+CiAgPHBhdGggZD0iTTIwIDE2NSBDMTAgMTkwLCAyNSAyMDUsIDU1IDIxMCIgLz4KICA8cGF0aCBkPSJNNDAgMTY1IEM0NSAxODUsIDYwIDIwNSwgODUgMjEwIiAvPgogIDxwYXRoIGQ9Ik0xMzUgMjEwIEMxNjAgMjA1LCAxOTAgMTkwLCAyMDAgMTY1IiAvPgogIDxwYXRoIGQ9Ik0xMzUgMTkwIEMxNTUgMTg1LCAxODAgMTcwLCAxOTAgMTU1IiAvPgo8L2c+Cjwvc3ZnPg==");
-      background-repeat:no-repeat;
-      background-size: 160px 160px;
-      background-position: left -20px top -20px, right -20px top -20px, left -20px bottom -20px, right -20px bottom -20px;
-      opacity:.35;
-      filter: drop-shadow(0 10px 18px rgba(0,0,0,.35));
+      border:1px solid var(--stroke);
+      background:
+        linear-gradient(155deg, rgba(78,213,255,.08), transparent 42%),
+        linear-gradient(215deg, rgba(109,123,255,.10), transparent 40%),
+        var(--surface-2);
+      box-shadow:var(--shadow);
+      overflow:hidden;
     }
 
     .card::after{
       content:"";
-      position:absolute; inset:0;
+      position:absolute;
+      inset:0;
       pointer-events:none;
       border-radius:var(--radius);
       box-shadow:
-        inset 0 0 0 1px rgba(0,0,0,.72),
-        inset 0 0 0 2px rgba(255,214,170,.05),
-        inset 0 0 70px rgba(0,0,0,.55);
+        inset 0 0 0 1px rgba(255,255,255,.04),
+        inset 0 -70px 120px rgba(0,0,0,.3);
     }
 
     .card .head{
-      padding:16px 16px 12px;
-      border-bottom:1px solid rgba(255,214,170,.12);
+      padding:14px 16px 11px;
+      border-bottom:1px solid var(--stroke-soft);
       display:flex;
       justify-content:space-between;
       gap:12px;
       align-items:center;
-      background:
-        linear-gradient(180deg, rgba(255,232,199,.06), rgba(0,0,0,.30));
+      background:rgba(0,0,0,.15);
     }
 
     .card .title{
-      font-family: Cinzel, Inter, ui-serif, Georgia, serif;
-      font-weight:800;
-      letter-spacing: 1.1px;
+      font-family: "Orbitron", "Space Grotesk", sans-serif;
+      font-size:12px;
+      letter-spacing:1.2px;
       text-transform:uppercase;
-      font-size: 13px;
-      color: rgba(255,244,230,.92);
+      color:rgba(230,242,255,.96);
+      font-weight:700;
     }
 
-    .card .body{ padding:16px; position:relative; z-index:1; }
+    .card .body{
+      padding:16px;
+      position:relative;
+      z-index:1;
+    }
 
     .drop{
-      border: 2px dashed rgba(255,214,170,.24);
-      border-radius: var(--radius2);
+      border:2px dashed var(--stroke);
+      border-radius:var(--radius2);
       padding:16px;
-      background:
-        linear-gradient(180deg, rgba(255,232,199,.04), rgba(0,0,0,.36));
+      background:rgba(8,14,28,.56);
       outline:none;
+      transition:border-color .18s ease, box-shadow .18s ease, background .18s ease;
     }
 
     .drop:focus{
-      border-color: rgba(210,168,90,.72);
-      box-shadow:0 0 0 5px rgba(210,168,90,.18), 0 0 45px rgba(210,168,90,.14);
+      border-color:rgba(78,213,255,.8);
+      background:rgba(8,14,28,.76);
+      box-shadow:0 0 0 5px rgba(78,213,255,.16);
     }
 
-    .actions{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:12px; }
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      margin-top:12px;
+    }
 
     button{
-      padding:10px 12px;
-      border-radius: 12px;
-      border: 1px solid rgba(255,214,170,.18);
+      padding:10px 13px;
+      border-radius:10px;
+      border:1px solid var(--stroke);
       background:
-        linear-gradient(180deg, rgba(255,232,199,.10), rgba(0,0,0,.34));
-      color: var(--text);
+        linear-gradient(180deg, rgba(78,213,255,.15), rgba(10,16,34,.54));
+      color:var(--text);
       cursor:pointer;
-      box-shadow: 0 14px 28px rgba(0,0,0,.45);
       letter-spacing:.2px;
+      transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease;
+      box-shadow: 0 10px 22px rgba(0,0,0,.35);
     }
-    button:hover{
-      border-color: rgba(210,168,90,.36);
-      box-shadow: 0 18px 34px rgba(0,0,0,.52), 0 0 0 3px rgba(210,168,90,.10);
-      transform: translateY(-1px);
-    }
-    button:active{ transform: translateY(0); }
-    button:disabled{ opacity:.45; cursor:not-allowed; transform:none; box-shadow: 0 12px 20px rgba(0,0,0,.28); }
 
-    .hint{ color:var(--muted); margin:10px 0 0; line-height:1.55; }
+    button:hover{
+      transform:translateY(-1px);
+      border-color:rgba(78,213,255,.55);
+      box-shadow:0 12px 24px rgba(0,0,0,.42), 0 0 0 3px rgba(78,213,255,.14);
+    }
+
+    button:active{ transform:translateY(0); }
+    button:disabled{
+      opacity:.46;
+      cursor:not-allowed;
+      transform:none;
+      box-shadow:none;
+    }
+
+    .hint{
+      color:var(--muted);
+      margin:10px 0 0;
+      line-height:1.5;
+    }
 
     .preview{
       margin-top:12px;
-      border-radius: var(--radius2);
-      border:1px solid rgba(255,214,170,.14);
+      border-radius:var(--radius2);
+      border:1px solid var(--stroke-soft);
       overflow:hidden;
-      background: rgba(0,0,0,.36);
+      background:rgba(0,0,0,.24);
     }
-    .preview img{ display:block; width:100%; max-height:380px; object-fit:contain; }
+    .preview img{
+      display:block;
+      width:100%;
+      max-height:380px;
+      object-fit:contain;
+    }
 
-    .kpis{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
-    @media (max-width:520px){ .kpis{ grid-template-columns:1fr; } }
+    .kpis{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+    }
+    @media (max-width:560px){ .kpis{ grid-template-columns:1fr; } }
 
     .kpi{
       background:
-        linear-gradient(180deg, rgba(255,232,199,.06), rgba(0,0,0,.35)),
-        radial-gradient(240px 160px at 100% 0%, rgba(210,168,90,.18), transparent 62%),
-        radial-gradient(220px 150px at 0% 100%, rgba(226,82,44,.14), transparent 60%);
-      border: 1px solid rgba(255,214,170,.16);
-      border-radius: var(--radius2);
+        linear-gradient(160deg, rgba(78,213,255,.10), transparent 42%),
+        linear-gradient(220deg, rgba(109,123,255,.12), transparent 45%),
+        rgba(10,16,34,.62);
+      border:1px solid var(--stroke-soft);
+      border-radius:var(--radius2);
       padding:14px;
-      min-height:150px;
+      min-height:154px;
       position:relative;
       overflow:hidden;
     }
 
     .kpi .label{
-      color:rgba(255,225,195,.70);
-      font-size:12px;
-      letter-spacing:.9px;
+      color:rgba(198,222,246,.8);
+      font-size:11px;
+      letter-spacing:1px;
       text-transform:uppercase;
-      font-family: Cinzel, Inter, ui-serif, Georgia, serif;
+      font-family: "Orbitron", "Space Grotesk", sans-serif;
     }
 
     .kpi .value{
-      font-size:40px;
+      font-size:42px;
       font-weight:900;
-      margin-top:6px;
-      text-shadow: 0 12px 34px rgba(0,0,0,.65);
+      line-height:1;
+      margin-top:8px;
+      font-family: "Orbitron", "Space Grotesk", sans-serif;
     }
 
-    .kpi .sub{ margin-top:6px; color:var(--muted); font-size:13px; }
+    .kpi .sub{
+      margin-top:6px;
+      color:var(--muted);
+      font-size:13px;
+    }
 
     .badge{
       display:inline-flex;
       align-items:center;
       gap:8px;
+      margin-top:10px;
       padding:6px 10px;
       border-radius:999px;
-      border:1px solid rgba(255,214,170,.18);
-      background: rgba(0,0,0,.22);
+      border:1px solid var(--stroke-soft);
+      background:rgba(7,12,26,.74);
       color:var(--muted);
       font-size:12px;
-      margin-top:8px;
-      box-shadow: inset 0 0 0 1px rgba(0,0,0,.35);
     }
 
     .badge .mini{
-      width:8px; height:8px; border-radius:999px;
-      background: var(--gold);
-      box-shadow:0 0 0 4px rgba(210,168,90,.16), 0 0 18px rgba(210,168,90,.18);
+      width:8px;
+      height:8px;
+      border-radius:999px;
+      background:var(--accent);
+      box-shadow:0 0 0 4px rgba(78,213,255,.16);
     }
-    .badge .mini.ok{ background: var(--ok); box-shadow:0 0 0 4px rgba(110,231,168,.14), 0 0 18px rgba(110,231,168,.16); }
-    .badge .mini.bad{ background: var(--bad); box-shadow:0 0 0 4px rgba(255,107,122,.14), 0 0 18px rgba(255,107,122,.16); }
+    .badge .mini.ok{
+      background:var(--good);
+      box-shadow:0 0 0 4px rgba(75,227,157,.14);
+    }
+    .badge .mini.bad{
+      background:var(--bad);
+      box-shadow:0 0 0 4px rgba(255,95,133,.14);
+    }
 
     .meter{
       margin-top:10px;
       padding:10px 10px 12px;
-      border-radius: 14px;
-      border:1px solid rgba(255,214,170,.16);
-      background:
-        linear-gradient(180deg, rgba(255,232,199,.05), rgba(0,0,0,.34));
+      border-radius:12px;
+      border:1px solid var(--stroke-soft);
+      background:rgba(8,14,28,.64);
     }
 
-    .meterTop{ display:flex; align-items:center; justify-content:space-between; gap:10px; color:var(--muted); font-size:12px; line-height:1.25; margin-bottom:8px; }
-    .meterTop b{ color:rgba(255,244,230,.92); font-weight:800; letter-spacing:.5px; }
+    .meterTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.3;
+      margin-bottom:8px;
+    }
+    .meterTop b{
+      color:rgba(230,242,255,.96);
+      letter-spacing:.5px;
+    }
 
     .progress{
       width:100%;
-      height:14px;
+      height:13px;
       border-radius:999px;
       overflow:hidden;
-      border:1px solid rgba(255,214,170,.16);
-      background:
-        linear-gradient(180deg, rgba(255,232,199,.05), rgba(0,0,0,.42));
-      box-shadow: inset 0 0 0 1px rgba(0,0,0,.35), 0 12px 26px rgba(0,0,0,.45);
+      border:1px solid var(--stroke-soft);
+      background:rgba(0,0,0,.35);
+      box-shadow:inset 0 0 0 1px rgba(0,0,0,.34);
     }
 
     .bar{
-      height:100%;
       width:0%;
+      height:100%;
       border-radius:999px;
-      background:
-        linear-gradient(90deg, rgba(210,168,90,.98), rgba(226,82,44,.92));
-      box-shadow: 0 0 26px rgba(226,82,44,.16), 0 0 26px rgba(210,168,90,.12);
-      transition: width 240ms ease;
+      transition:width .22s ease;
+      background:linear-gradient(90deg, var(--accent), var(--accent-2));
+      box-shadow:0 0 20px rgba(109,123,255,.4);
       position:relative;
     }
+
     .bar::after{
       content:"";
-      position:absolute; inset:0;
-      background: repeating-linear-gradient(135deg, rgba(255,255,255,.10) 0 7px, transparent 7px 14px);
-      opacity:.24;
-      mix-blend-mode: overlay;
-      pointer-events:none;
-    }
-    /* === Chart: evitar crecimiento infinito === */
-    .chartWrap{
-      height: 260px;          /* altura fija */
-      max-height: 260px;
-      width: 100%;
-      position: relative;     /* requerido por Chart responsive */
-      overflow: hidden;       /* corta cualquier exceso */
-      border-radius: 14px;
-      border: 1px solid rgba(255,214,170,.14);
-      background: rgba(0,0,0,.28);
+      position:absolute;
+      inset:0;
+      background:repeating-linear-gradient(130deg, rgba(255,255,255,.18) 0 7px, transparent 7px 14px);
+      opacity:.25;
     }
 
-    /* IMPORTANTÍSIMO: el canvas debe obedecer al wrapper */
-    .chartWrap canvas{
-      display: block;
-      width: 100% !important;
-      height: 100% !important;
+    .chartsGrid{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:12px;
+      margin-top:12px;
     }
-    .chartBox{
-      margin-top: 14px;
-      padding: 12px;
-      border-radius: var(--radius2);
-      border:1px solid rgba(255,214,170,.14);
-      background: rgba(0,0,0,.18);
+    @media (max-width:1040px){ .chartsGrid{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media (max-width:760px){ .chartsGrid{ grid-template-columns:1fr; } }
+
+    .chartPanel{
+      border:1px solid var(--stroke-soft);
+      border-radius:var(--radius2);
+      background:
+        linear-gradient(160deg, rgba(78,213,255,.12), transparent 48%),
+        linear-gradient(220deg, rgba(109,123,255,.14), transparent 56%),
+        rgba(8,14,28,.72);
+      padding:10px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
     }
 
     .chartTitle{
-      font-family: Cinzel, Inter, ui-serif, Georgia, serif;
-      letter-spacing: .8px;
-      text-transform: uppercase;
-      font-size: 12px;
-      color: rgba(255,225,195,.75);
-      margin-bottom: 10px;
+      font-family: "Orbitron", "Space Grotesk", sans-serif;
+      text-transform:uppercase;
+      letter-spacing:.9px;
+      font-size:11px;
+      color:rgba(200,224,248,.84);
+      margin-bottom:8px;
     }
 
     .chartWrap{
-      height: 260px;           /* <- CLAVE: limita alto */
-      width: 100%;
-      position: relative;
+      height:190px;
+      max-height:190px;
+      width:100%;
+      position:relative;
+      overflow:hidden;
+      border-radius:12px;
+      border:1px solid var(--stroke-soft);
+      background:rgba(0,0,0,.24);
+    }
+
+    .chartPanel.chartWide{
+      grid-column: span 2;
+    }
+    @media (max-width:760px){
+      .chartPanel.chartWide{
+        grid-column: auto;
+      }
     }
 
     .chartWrap canvas{
-      width: 100% !important;
-      height: 100% !important; /* <- CLAVE */
-      display: block;
+      display:block;
+      width:100% !important;
+      height:100% !important;
     }
 
-
-
-    pre{
-      margin:0;
-      white-space:pre-wrap;
-      background:
-        linear-gradient(180deg, rgba(255,232,199,.04), rgba(0,0,0,.44));
-      border:1px solid rgba(255,214,170,.14);
-      border-radius: var(--radius2);
-      padding:14px;
-      color:rgba(255,244,230,.86);
-      line-height:1.55;
-      min-height:110px;
+    .chartBox{
+      margin-top:12px;
+      padding:12px;
+      border-radius:var(--radius2);
+      border:1px solid var(--stroke-soft);
+      background:rgba(8,14,28,.62);
     }
 
-    .small{ color: rgba(255,225,195,.60); font-size:12px; margin-top:10px; line-height:1.45; }
+    .small{
+      margin-top:10px;
+      color:rgba(173,201,229,.67);
+      font-size:12px;
+      line-height:1.45;
+    }
   </style>
 
 
@@ -429,24 +463,23 @@
   <div class="wrap">
     <header>
       <div>
-        <div class="brand"><h1>Hunt HUD • OCR → KD / KDA</h1><div class="subtitle">Pegá una imagen con <b>Ctrl+V</b>. Extraigo los <b>3 primeros números</b> (kills, deaths, assists) y muestro <b>KD</b>, tu “<b>KDA</b>”, progreso a <b>+0.01</b> (redondeo real) y <b>Safe</b>.</div></div>
+        <div class="brand"><h1>Hunt Stats Tracker</h1><div class="subtitle">Paste a screenshot with <b>Ctrl+V</b> and get instant stats: <b>KD</b>, <b>KDA</b>, and recent trends.</div></div>
         <div class="subtitle">
-          Pegá una imagen con <b>Ctrl+V</b>. Extraigo los <b>3 primeros números</b> (n1, n2, n3) y calculo:
-          <b>KD = n1/n2</b>, <b>(n1+n3)/n2</b> y progreso para subir <b>0.01</b>.
+          You only need kills, deaths, and assists visible. Analysis is automatic.
         </div>
       </div>
       <div style="display:flex; flex-direction:column; gap:10px; align-items:flex-end;">
         <div class="pill">
           <span class="dot" id="dot"></span>
-          <span id="status">Esperando imagen…</span>
+          <span id="status">Ready to analyze your screenshot</span>
         </div>
 
         <!-- Auth -->
         <div id="authBox" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
           <div id="userPill" class="pill" style="display:none; box-shadow:none; background:rgba(255,255,255,.05)">
             <span class="dot ok"></span>
-            <span id="userLabel">Logueado</span>
-            <button id="logoutBtn" style="padding:8px 10px; border-radius:10px;">Salir</button>
+            <span id="userLabel">Signed in</span>
+            <button id="logoutBtn" style="padding:8px 10px; border-radius:10px;">Sign out</button>
           </div>
 
           <!-- Google button renders here -->
@@ -459,69 +492,69 @@
     <div class="grid">
       <section class="card">
         <div class="head">
-          <div class="title">Entrada / Portapapeles</div>
-          <div class="pill" style="box-shadow:none;background:rgba(255,255,255,.05)">Ctrl+V aquí</div>
+          <div class="title">Upload Screenshot</div>
+          <div class="pill" style="box-shadow:none;background:rgba(255,255,255,.05)">Paste your image</div>
         </div>
         <div class="body">
           <div class="drop" id="dropZone" tabindex="0">
             <div class="hint">
-              ✅ Click acá para enfocarlo, luego <b>Ctrl+V</b>.<br/>
-              Si no anda, probá el botón <b>“Leer del portapapeles”</b> (requiere permiso).
+              Paste your screenshot with <b>Ctrl+V</b>.<br/>
+              Or use <b>"Paste from clipboard"</b>.
             </div>
 
             <div class="actions">
-              <button id="clearBtn">Limpiar</button>
-              <button id="readBtn">Leer del portapapeles</button>
-              <button id="copyBtn" disabled>Copiar resultado</button>
+              <button id="clearBtn">Clear</button>
+              <button id="readBtn">Paste from clipboard</button>
+              <button id="copyBtn" disabled>Copy result</button>
             </div>
 
             <div class="preview" id="previewBox" style="display:none">
               <img id="preview" alt="preview" />
             </div>
 
-            <div class="small" id="debug">Debug: —</div>
+            <div class="small" id="debug">Status: waiting for image.</div>
           </div>
         </div>
       </section>
 
       <section class="card">
         <div class="head">
-          <div class="title">Resultados / HUD</div>
-          <div class="pill" style="box-shadow:none;background:rgba(255,255,255,.05)">n1 / n2 / n3</div>
+          <div class="title">Results</div>
+          <div class="pill" style="box-shadow:none;background:rgba(255,255,255,.05)">Kills / Deaths / Assists</div>
         </div>
         <div class="body">
           <div class="kpis">
             <div class="kpi">
-              <div class="label">KD (n1 / n2)</div>
-              <div class="value" id="kdBig">—</div>
-              <div class="sub" id="kdSub">—</div>
-              <div class="badge"><span class="mini" id="kdMini"></span><span id="kdNext">—</span></div>
+              <div class="label">KD</div>
+              <div class="value" id="kdBig">-</div>
+              <div class="sub" id="kdSub">-</div>
+              <div class="badge"><span class="mini" id="kdMini"></span><span id="kdNext">-</span></div>
 
               <!-- NEW: progress to next 0.01 + safe -->
               <div class="meter">
                 <div class="meterTop">
-                  <span id="kdProgLabel">—</span>
-                  <span><b id="kdSafe">—</b></span>
+                  <span id="kdProgLabel">-</span>
+                  <span><b id="kdSafe">-</b></span>
                 </div>
-                <div class="progress" aria-label="Progreso KD a próximo 0.01">
+                <div class="progress" aria-label="KD progress">
                   <div class="bar" id="kdBar"></div>
                 </div>
               </div>
             </div>
 
             <div class="kpi">
-              <div class="label">Tu fórmula “KDA” ((n1 + n3) / n2)</div>
-              <div class="value" id="kdaBig">—</div>
-              <div class="sub" id="kdaSub">—</div>
-              <div class="badge"><span class="mini" id="kdaMini"></span><span id="kdaNext">—</span></div>
+              <div class="label">KDA</div>
+              <div class="value" id="kdaBig">-</div>
+              <div class="sub" id="kdaSub">-</div>
+              <div class="badge"><span class="mini" id="kdaMini"></span><span id="kdaNext">-</span></div>
 
               <!-- NEW: progress to next 0.01 + safe -->
               <div class="meter">
                 <div class="meterTop">
-                  <span id="kdaProgLabel">—</span>
-                  <span><b id="kdaSafe">—</b></span>
+                  <span id="kdaProgLabel">-</span>
+                  <span><b id="kdaSafe">-</b></span>
                 </div>
-                <div class="progress" aria-label="Progreso KDA a próximo 0.01">
+                <div class="progress" aria-label="KDA progress">
                   <div class="bar" id="kdaBar"></div>
                 </div>
               </div>
@@ -529,32 +562,42 @@
           </div>
 
           <div style="height:12px"></div>
-          <pre id="out">—</pre>
-
-          <div style="height:12px"></div>
 
           <div class="kpi" style="min-height:auto;">
-            <div class="label">Histórico (últimos 20)</div>
-            <div class="sub" id="histSub">Logueate para ver tu historial.</div>
-            <div 
-              style="
-                width:100%;
-                overflow:hidden;
-                position:relative;
-                border-radius:14px;
-              "
-            >
-            <div class="chartWrap">
-              <canvas id="historyChart"></canvas>
+            <div class="label">Recent history</div>
+            <div class="sub" id="histSub">Sign in to see your history.</div>
+            <div class="chartsGrid">
+              <div class="chartPanel">
+                <div class="chartTitle">KDA</div>
+                <div class="chartWrap">
+                  <canvas id="chartKda"></canvas>
+                </div>
+              </div>
+              <div class="chartPanel">
+                <div class="chartTitle">KD</div>
+                <div class="chartWrap">
+                  <canvas id="chartKd"></canvas>
+                </div>
+              </div>
+              <div class="chartPanel">
+                <div class="chartTitle">Kills</div>
+                <div class="chartWrap">
+                  <canvas id="chartKills"></canvas>
+                </div>
+              </div>
+              <div class="chartPanel chartWide">
+                <div class="chartTitle">Deaths</div>
+                <div class="chartWrap">
+                  <canvas id="chartDeaths"></canvas>
+                </div>
+              </div>
+              <div class="chartPanel">
+                <div class="chartTitle">Assists</div>
+                <div class="chartWrap">
+                  <canvas id="chartAssists"></canvas>
+                </div>
+              </div>
             </div>
-            
-        <div class="chartBox">
-          <div class="chartTitle">Progreso acumulado • Kills / Deaths / Assists</div>
-            <div class="chartWrap">
-              <canvas id="kdaProgressChart"></canvas>
-            </div>
-          </div>
-        </div>
           </div>
         </div>
       </section>
@@ -566,7 +609,6 @@
   <script>
     const statusEl = document.getElementById('status');
     const dotEl = document.getElementById('dot');
-    const outEl = document.getElementById('out');
 
     const previewBox = document.getElementById('previewBox');
     const previewEl = document.getElementById('preview');
@@ -596,25 +638,25 @@
     // === AUTH + BACKEND CONFIG ===
     const histSub = document.getElementById("histSub");
 
-    let historyChart = null;
-    let progressChart = null;
+    let metricsCharts = {};
+    let resultCopyText = "-";
 
     const GOOGLE_CLIENT_ID = "1068658646999-j72o9l8k0s0bkdu9iviss6o6p31p8mv4.apps.googleusercontent.com";
-    const BACKEND_BASE_URL = "https://fastapi-production-bf29.up.railway.app"; // sin slash final
+    const BACKEND_BASE_URL = "https://fastapi-production-bf29.up.railway.app"; // no trailing slash
 
     const userPill = document.getElementById("userPill");
     const userLabel = document.getElementById("userLabel");
     const logoutBtn = document.getElementById("logoutBtn");
 
-    function authExpired(message = "Tu sesión con Google expiró. Volvé a loguearte.") {
-      // 1) avisos UX
+    function authExpired(message = "Your session expired. Please sign in again.") {
+      // 1) UX notice
       setState("bad", message);
 
-      // 2) borrá token local y mostrà botón login
+      // 2) clear local token and show login button
       localStorage.removeItem("google_id_token");
       setAuthUI(false);
 
-      // 3) opcional: si GIS está disponible, podés “soltar” selección
+      // 3) optional: if GIS is available, disable auto-select
       try {
         if (window.google?.accounts?.id?.disableAutoSelect) {
           google.accounts.id.disableAutoSelect();
@@ -622,8 +664,8 @@
       } catch (_) {}
     }
 
-    function setAuthUI(isLoggedIn, labelText = "Logueado") {
-      const btn = googleBtn; // el div donde se renderiza el botón
+    function setAuthUI(isLoggedIn, labelText = "Signed in") {
+      const btn = googleBtn; // container where Google button is rendered
       if (isLoggedIn) {
         if (btn) btn.style.display = "none";
         userPill.style.display = "inline-flex";
@@ -634,56 +676,84 @@
       }
     }
 
-    function renderProgressChart(readings) {
-      const canvas = document.getElementById("kdaProgressChart");
-      if (!canvas) return;
-
-      // orden cronológico (viejo → nuevo)
-      const ordered = [...readings].sort(
-        (a,b) => new Date(a.created_at) - new Date(b.created_at)
-      );
-
-      const labels = ordered.map((r, i) => {
-        const d = new Date(r.created_at);
-        const mm = String(d.getMonth()+1).padStart(2,'0');
-        const dd = String(d.getDate()).padStart(2,'0');
-        const hh = String(d.getHours()).padStart(2,'0');
-        const mi = String(d.getMinutes()).padStart(2,'0');
-        return `${dd}/${mm} ${hh}:${mi}`;
+    function destroyMetricCharts() {
+      Object.values(metricsCharts).forEach((chart) => {
+        try { chart?.destroy(); } catch (_) {}
       });
+      metricsCharts = {};
+    }
 
-      const kills = ordered.map(r => r.kills ?? 0);
-      const deaths = ordered.map(r => r.deaths ?? 0);
-      const assists = ordered.map(r => r.assists ?? 0);
-
-      const data = {
-        labels,
-        datasets: [
-          { label: "Kills", data: kills, tension: 0.25 },
-          { label: "Deaths", data: deaths, tension: 0.25 },
-          { label: "Assists", data: assists, tension: 0.25 },
-        ],
-      };
-
-      const options = {
+    function chartOptions(shouldStartAtZero = false) {
+      return {
         responsive: true,
         maintainAspectRatio: false,
         animation: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { intersect: false, mode: "index" },
+        },
+        interaction: { intersect: false, mode: "index" },
         scales: {
-          x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
-          y: { beginAtZero: true },
+          x: {
+            grid: { color: "rgba(106,181,255,.10)" },
+            ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8, color: "rgba(198,222,246,.78)" },
+          },
+          y: {
+            beginAtZero: shouldStartAtZero,
+            grid: { color: "rgba(106,181,255,.10)" },
+            ticks: { color: "rgba(198,222,246,.78)" },
+          },
+        },
+        elements: {
+          line: { borderWidth: 2.2, tension: 0.24 },
+          point: { radius: 2, hoverRadius: 4 },
         },
       };
+    }
 
-      if (progressChart) {
-        progressChart.destroy();
-        progressChart = null;
-      }
+    function renderMetricCharts(readings) {
+      const ordered = [...readings].sort(
+        (a, b) => new Date(a.created_at) - new Date(b.created_at)
+      );
 
-      progressChart = new Chart(canvas.getContext("2d"), {
-        type: "line",
-        data,
-        options,
+      const labels = ordered.map((r) => {
+        const d = new Date(r.created_at);
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+        return `${dd}/${mm}`;
+      });
+
+      const chartConfig = [
+        { id: "chartKda", label: "KDA", color: "#4ed5ff", data: ordered.map((r) => computeKDA(r)), startAtZero: false },
+        { id: "chartKd", label: "KD", color: "#6d7bff", data: ordered.map((r) => computeKD(r)), startAtZero: false },
+        { id: "chartKills", label: "Kills", color: "#4be39d", data: ordered.map((r) => r.kills ?? 0), startAtZero: true },
+        { id: "chartDeaths", label: "Deaths", color: "#ff5f85", data: ordered.map((r) => r.deaths ?? 0), startAtZero: true },
+        { id: "chartAssists", label: "Assists", color: "#ffd166", data: ordered.map((r) => r.assists ?? 0), startAtZero: true },
+      ];
+
+      destroyMetricCharts();
+
+      chartConfig.forEach((cfg) => {
+        const canvas = document.getElementById(cfg.id);
+        if (!canvas) return;
+
+        metricsCharts[cfg.id] = new Chart(canvas.getContext("2d"), {
+          type: "line",
+          data: {
+            labels,
+            datasets: [
+              {
+                label: cfg.label,
+                data: cfg.data,
+                borderColor: cfg.color,
+                backgroundColor: `${cfg.color}33`,
+                fill: true,
+                spanGaps: true,
+              },
+            ],
+          },
+          options: chartOptions(cfg.startAtZero),
+        });
       });
     }
 
@@ -696,7 +766,7 @@
       const key = `${kills}|${deaths}|${assists}`;
       const now = Date.now();
 
-      // si es el mismo payload dentro de 1500ms, ignorá
+      // Ignore duplicate payloads sent within 1500ms
       if (key === lastPostKey && (now - lastPostAt) < 1500) return false;
 
       lastPostKey = key;
@@ -719,9 +789,9 @@
         });
 
         if (!res.ok) {
-          // ⛔ Si el backend dice 401 => token vencido/invalid
+          //  Si el backend dice 401 => token vencido/invalid
           if (res.status === 401) {
-            authExpired("Token inválido/vencido. Volvé a loguearte con Google.");
+            authExpired("Session expired. Sign in again to save matches.");
             return;
           }
 
@@ -732,7 +802,7 @@
 
         console.log("Reading guardado OK");
       } catch (e) {
-        console.warn("No pude pegarle al backend:", e);
+        console.warn("Could not reach backend:", e);
       }
     }
 
@@ -747,7 +817,7 @@
     }
 
     function fmt(n, digits=3){
-      if(!Number.isFinite(n)) return '—';
+      if(!Number.isFinite(n)) return '-';
       const s = n.toFixed(digits);
       return s.replace(/\.?0+$/,'');
     }
@@ -756,12 +826,26 @@
       return Math.max(0, Math.min(1, x));
     }
 
+    function buildResultCopyText({ kills, deaths, assists, kd, kdNextShown, kdNeeded, kdSafeDeaths, kda, kdaNextShown, kdaNeeded, kdaSafeDeaths }){
+      return (
+        `Kills: ${fmt(kills)}\n` +
+        `Deaths: ${fmt(deaths)}\n` +
+        `Assists: ${fmt(assists)}\n\n` +
+        `KD: ${fmt(kd,3)}\n` +
+        `To reach ${fmt(kdNextShown,2)}: ${kdNeeded} more kills needed\n` +
+        `Current buffer: ${kdSafeDeaths === Infinity ? 'INF' : kdSafeDeaths} deaths\n\n` +
+        `KDA: ${fmt(kda,3)}\n` +
+        `To reach ${fmt(kdaNextShown,2)}: ${kdaNeeded} more kills needed\n` +
+        `Current buffer: ${kdaSafeDeaths === Infinity ? 'INF' : kdaSafeDeaths} deaths`
+      );
+    }
+
     // Google callback (GIS)
     function handleCredentialResponse(response) {
       localStorage.setItem("google_id_token", response.credential);
-      setAuthUI(true, "Logueado con Google ✅");
+      setAuthUI(true, "Signed in [OK]");
       refreshHistoryIfLoggedIn();
-      focusDropZone(); // 🔥 importante
+      focusDropZone(); // keep paste target focused
 
     }
     window.handleCredentialResponse = handleCredentialResponse;
@@ -770,10 +854,10 @@
 
     
 
-    // Init Google button (imperativo, sin race condition)
+    // Init Google button (imperative, no race condition)
     function initGoogleLogin() {
       if (!window.google || !google.accounts || !google.accounts.id) {
-        // script todavía no cargó (async/defer)
+        // Script may still be loading (async/defer)
         setTimeout(initGoogleLogin, 50);
         return;
       }
@@ -791,7 +875,7 @@
       });
 
       const token = localStorage.getItem("google_id_token");
-      setAuthUI(!!token, token ? "Logueado ✅" : "—");
+      setAuthUI(!!token, token ? "Signed in [OK]" : "-");
       if (token) refreshHistoryIfLoggedIn();
     }
 
@@ -800,8 +884,8 @@
     logoutBtn?.addEventListener("click", () => {
       localStorage.removeItem("google_id_token");
       setAuthUI(false);
-      if (histSub) histSub.textContent = "Logueate para ver tu historial.";
-      if (historyChart) { historyChart.destroy(); historyChart = null; }
+      if (histSub) histSub.textContent = "Sign in to see your history.";
+      destroyMetricCharts();
     });
 
     function computeKD(r) {
@@ -813,13 +897,13 @@
     let meInFlight = false;
     let meAbort = null;
     let lastMeFetchAt = 0;
-    const ME_MIN_INTERVAL_MS = 1200; // 1.2s, ajustalo si querés
+    const ME_MIN_INTERVAL_MS = 1200; // 1.2s throttle
 
     async function fetchMyReadings() {
       const token = localStorage.getItem("google_id_token");
       if (!token) return null;
 
-      // abort request previo si todavía está corriendo
+      // Abort previous request if still running
       if (meAbort) {
         try { meAbort.abort(); } catch {}
       }
@@ -831,7 +915,7 @@
       });
 
       if (res.status === 401) {
-        authExpired("Sesión vencida. Volvé a loguearte para ver tu histórico.");
+        authExpired("Session expired. Sign in again to view your history.");
         return;
       }
 
@@ -844,62 +928,14 @@
     }
 
 
-    function renderHistoryChart(readings) {
-      const canvas = document.getElementById("historyChart");
-      if (!canvas) return;
-
-      const ctx = canvas.getContext("2d");
-
-      // destruir si existe
-      if (historyChart) {
-        historyChart.destroy();
-        historyChart = null;
-      }
-
-      // vienen desc → los invertimos
-      const items = [...readings].reverse();
-
-      const labels = items.map((_, i) => `${i + 1}`);
-      const kdData = items.map(r => computeKD(r));
-      const kdaData = items.map(r => computeKDA(r));
-
-      historyChart = new Chart(ctx, {
-        type: "line",
-        data: {
-          labels,
-          datasets: [
-            {
-              label: "KD",
-              data: kdData,
-              borderWidth: 2,
-              tension: 0.25,
-            },
-            {
-              label: "KDA",
-              data: kdaData,
-              borderWidth: 2,
-              tension: 0.25,
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          animation: false
-        }
-      });
-    }
-
-
-
     async function refreshHistoryIfLoggedIn() {
       const token = localStorage.getItem("google_id_token");
       if (!token) return;
 
-      // lock: si ya hay uno corriendo, no dispares otro
+      // lock: if one request is running, skip
       if (meInFlight) return;
 
-      // throttle: evita spam si lo llaman muy seguido
+      // throttle: avoid frequent repeated calls
       const now = Date.now();
       if (now - lastMeFetchAt < ME_MIN_INTERVAL_MS) return;
       lastMeFetchAt = now;
@@ -909,7 +945,7 @@
         const payload = await fetchMyReadings();
 
         if (!payload || !payload.readings) {
-          if (histSub) histSub.textContent = "Logueate para ver tu historial.";
+          if (histSub) histSub.textContent = "Sign in to see your history.";
           return;
         }
         
@@ -917,14 +953,14 @@
         const count = payload.readings.length;
         if (histSub) {
           histSub.textContent = count
-            ? `Mostrando ${Math.min(20, count)} lecturas (más viejo → más nuevo).`
-            : "Todavía no tenés lecturas guardadas.";
+            ? `Showing ${Math.min(20, count)} matches (oldest to newest).`
+            : "No saved matches yet.";
         }
 
-        if (count) renderHistoryChart(payload.readings);
-        if (count) renderProgressChart(payload.readings);
+        if (count) renderMetricCharts(payload.readings);
+        else destroyMetricCharts();
       } catch (e) {
-        // AbortError es esperado si cancelás el request anterior
+        // AbortError is expected when cancelling a previous request
         if (String(e?.name) !== "AbortError") console.warn("refreshHistory error:", e);
       } finally {
         meInFlight = false;
@@ -934,43 +970,43 @@
 
 
     function reset(){
-      outEl.textContent = '—';
+      resultCopyText = "-";
       previewBox.style.display = 'none';
       previewEl.src = '';
 
-      kdBig.textContent = '—';
-      kdSub.textContent = '—';
-      kdNext.textContent = '—';
-      kdProgLabel.textContent = '—';
+      kdBig.textContent = '-';
+      kdSub.textContent = '-';
+      kdNext.textContent = '-';
+      kdProgLabel.textContent = '-';
       kdBar.style.width = '0%';
-      kdSafe.textContent = '—';
+      kdSafe.textContent = '-';
       kdMini.classList.remove('ok','bad');
 
-      kdaBig.textContent = '—';
-      kdaSub.textContent = '—';
-      kdaNext.textContent = '—';
-      kdaProgLabel.textContent = '—';
+      kdaBig.textContent = '-';
+      kdaSub.textContent = '-';
+      kdaNext.textContent = '-';
+      kdaProgLabel.textContent = '-';
       kdaBar.style.width = '0%';
-      kdaSafe.textContent = '—';
+      kdaSafe.textContent = '-';
       kdaMini.classList.remove('ok','bad');
 
       copyBtn.disabled = true;
-      debugEl.textContent = 'Debug: —';
-      setState('idle','Esperando imagen…');
+      debugEl.textContent = 'Status: waiting for image.';
+      setState('idle','Ready to analyze your screenshot');
     }
 
     clearBtn.addEventListener('click', reset);
 
-    // IMPORTANTE: aseguramos foco para que Ctrl+V caiga acá
+    // IMPORTANT: keep focus so Ctrl+V paste lands here
     dropZone.addEventListener('click', () => dropZone.focus());
     window.addEventListener('load', () => dropZone.focus());
 
-    // Si volvés a la pestaña, recuperá foco
+    // Restore focus when returning to the tab
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) focusDropZone();
     });
 
-    // Si hacés click en cualquier lado que no sea un input, recuperá foco
+    // Restore focus when clicking outside inputs/buttons
     document.addEventListener('click', (e) => {
       const tag = (e.target?.tagName || "").toLowerCase();
       if (tag === "input" || tag === "textarea" || tag === "button") return;
@@ -979,40 +1015,40 @@
 
     copyBtn.addEventListener('click', async () => {
       try{
-        await navigator.clipboard.writeText(outEl.textContent);
-        setState('ok','Resultado copiado ✅');
-        setTimeout(() => setState('ok','Listo ✅'), 900);
+        await navigator.clipboard.writeText(resultCopyText);
+        setState('ok','Result copied [OK]');
+        setTimeout(() => setState('ok','Done [OK]'), 900);
       }catch(e){
-        setState('bad','No pude copiar (permiso del navegador).');
+        setState('bad','Could not copy result.');
       }
     });
 
     /**
-     * Stats hacia el próximo 0.01 (hundredth) y "safe por X" (cuántas muertes podés sumar
-     * sin que el valor *mostrado* (2 decimales hacia abajo) baje).
+     * Stats to the next +0.01 step and safe-death buffer:
+     * how many extra deaths you can take without dropping the displayed value.
      *
      * - ratio = numerator / denominator
-     * - mostrado = floor(ratio*100)/100
-     * - next = mostrado + 0.01
+     * - displayed = floor(ratio*100)/100
+     * - next = displayed + 0.01
      * - neededKills = ceil(next*denominator - numerator)
      * - progress = (numerator - base*denominator) / (next*denominator - base*denominator)
-     * - safeDeaths = floor(numerator/mostrado - denominator)
+     * - safeDeaths = floor(numerator/displayed - denominator)
      */
     
-    // REDONDEO a 2 decimales (half-up). Ej: 1.965 -> 1.97
+    // Round to 2 decimals (half-up). Example: 1.965 -> 1.97
     function round2(x){
-      // Epsilon para mitigar casos binarios raros (1.005, 1.965, etc.)
+      // Epsilon mitigates binary floating-point edge cases (1.005, 1.965, etc.)
       return Math.round((x + 1e-12) * 100) / 100;
     }
 
     /**
-     * Stats hacia el próximo +0.01 considerando el valor MOSTRADO (2 decimales, redondeo half-up).
+     * Stats toward next +0.01 based on DISPLAYED value (2 decimals, half-up).
      *
-     * Para que el valor mostrado suba +0.01:
-     *   necesitás ratio >= (nextShown - 0.005)
+     * For displayed value to increase by +0.01:
+     *   ratio must be >= (nextShown - 0.005)
      *
-     * "Safe por X" = cuántas muertes extra podés sumar sin que el valor mostrado baje,
-     * manteniendo ratio >= (shown - 0.005).
+     * "Safe by X" = extra deaths allowed without lowering displayed value,
+     * while keeping ratio >= (shown - 0.005).
      */
     function hundredthStats(numerator, denominator){
       if(denominator <= 0){
@@ -1023,35 +1059,35 @@
           needed: 0,
           progress: 1,
           safeDeaths: Infinity,
-          note: 'Deaths=0 → infinito'
+          note: 'Deaths=0 -> infinite'
         };
       }
 
       const ratio = numerator / denominator;
 
-      // Valor mostrado (2 decimales, redondeo half-up)
+      // Displayed value (2 decimals, half-up rounding)
       const shown = round2(ratio);
       const nextShown = round2(shown + 0.01);
 
       const halfStep = 0.005;
 
-      // Umbrales reales (no redondeados) para que el "shown" sea ese valor:
-      // shown si ratio >= shown - 0.005 (y < shown + 0.005)
+      // Real (unrounded) thresholds for the displayed value:
+      // shown if ratio >= shown - 0.005 (and < shown + 0.005)
       const startRatio = Math.max(0, shown - halfStep);
-      // para que muestre nextShown, alcanza con ratio >= nextShown - 0.005
+      // to display nextShown, ratio >= nextShown - 0.005 is enough
       const nextRatio = Math.max(0, nextShown - halfStep);
 
-      // Kills necesarios para cruzar el umbral del próximo centésimo mostrado
+      // Kills needed to cross next displayed hundredth threshold
       const needed = Math.max(0, Math.ceil(nextRatio * denominator - numerator - 1e-12));
 
-      // Progreso desde el umbral inferior del shown hasta el umbral inferior del nextShown
+      // Progress from shown lower bound to nextShown lower bound
       const rangeStart = startRatio * denominator;
       const rangeEnd = nextRatio * denominator;
       const denomRange = (rangeEnd - rangeStart) || 1;
       const progress = clamp01((numerator - rangeStart) / denomRange);
 
-      // Safe deaths: máximo d tal que round2(numerator/(denominator+d)) >= shown
-      // Condición suficiente: numerator/(den+d) >= shown - 0.005
+      // Safe deaths: max d such that round2(numerator/(denominator+d)) >= shown
+      // Sufficient condition: numerator/(den+d) >= shown - 0.005
       let safeDeaths = 0;
       const keepRatio = Math.max(0, shown - halfStep);
       if(shown <= 0 || keepRatio <= 0){
@@ -1078,7 +1114,7 @@
       previewEl.src = URL.createObjectURL(file);
       previewBox.style.display = 'block';
 
-      setState('idle', `OCR… (${sourceLabel})`);
+      setState('idle', `Analyzing screenshot (${sourceLabel})...`);
 
       try{
         const res = await Tesseract.recognize(file, 'eng');
@@ -1087,10 +1123,8 @@
         const matches = (text.match(/-?\d+(?:[.,]\d+)?/g) || []).map(s => s.replace(',', '.'));
 
         if(matches.length < 3){
-          outEl.textContent =
-            `Texto detectado:\n${text}\n\n` +
-            `No encontré 3 números. Encontré: ${matches.length ? matches.join(', ') : '0'}\n`;
-          setState('bad','Listo (faltan números).');
+          resultCopyText = 'Could not read data from the screenshot.';
+          setState('bad','Could not read the data.');
           return;
         }
 
@@ -1099,8 +1133,8 @@
         const n3 = parseFloat(matches[2]); // assists
 
         if(!Number.isFinite(n1) || !Number.isFinite(n2) || !Number.isFinite(n3)){
-          outEl.textContent = `Números detectados inválidos: ${matches.slice(0,3).join(', ')}`;
-          setState('bad','Listo (inválido).');
+          resultCopyText = 'The screenshot does not contain valid data.';
+          setState('bad','The screenshot does not contain valid data.');
           return;
         }
 
@@ -1118,77 +1152,75 @@
         const kdaS = hundredthStats(kdaNum, kdaDen);
 
         // Big KPIs
-        kdBig.textContent = Number.isFinite(kd) ? fmt(kd, 3) : '∞';
-        kdSub.textContent = `KD = ${fmt(n1)} / ${fmt(n2)}`;
+        kdBig.textContent = Number.isFinite(kd) ? fmt(kd, 3) : 'INF';
+        kdSub.textContent = `Kills ${fmt(n1)} / Deaths ${fmt(n2)}`;
 
-        kdaBig.textContent = Number.isFinite(kda) ? fmt(kda, 3) : '∞';
-        kdaSub.textContent = `(${fmt(n1)} + ${fmt(n3)}) / ${fmt(n2)}`;
+        kdaBig.textContent = Number.isFinite(kda) ? fmt(kda, 3) : 'INF';
+        kdaSub.textContent = `Kills ${fmt(n1)} + Assists ${fmt(n3)} / Deaths ${fmt(n2)}`;
 
         // Next 0.01 text
         kdNext.textContent = (Number.isFinite(kdS.nextShown))
-          ? `+0.01 → ${fmt(kdS.nextShown, 2)}: faltan ${kdS.needed} kills`
-          : (kdS.note || '—');
+          ? `To reach ${fmt(kdS.nextShown, 2)}: ${kdS.needed} more kills needed`
+          : (kdS.note || '-');
 
         kdaNext.textContent = (Number.isFinite(kdaS.nextShown))
-          ? `+0.01 → ${fmt(kdaS.nextShown, 2)}: faltan ${kdaS.needed} kills`
-          : (kdaS.note || '—');
+          ? `To reach ${fmt(kdaS.nextShown, 2)}: ${kdaS.needed} more kills needed`
+          : (kdaS.note || '-');
 
         // Progress bars
         kdBar.style.width = `${Math.round(kdS.progress * 100)}%`;
         kdaBar.style.width = `${Math.round(kdaS.progress * 100)}%`;
 
         kdProgLabel.textContent = Number.isFinite(kdS.shown)
-          ? `Progreso ${fmt(kdS.shown,2)} → ${fmt(kdS.nextShown,2)}: ${Math.round(kdS.progress*100)}%`
-          : 'Progreso: —';
+          ? `Progress to ${fmt(kdS.nextShown,2)}: ${Math.round(kdS.progress*100)}%`
+          : 'Progress: -';
 
         kdaProgLabel.textContent = Number.isFinite(kdaS.shown)
-          ? `Progreso ${fmt(kdaS.shown,2)} → ${fmt(kdaS.nextShown,2)}: ${Math.round(kdaS.progress*100)}%`
-          : 'Progreso: —';
+          ? `Progress to ${fmt(kdaS.nextShown,2)}: ${Math.round(kdaS.progress*100)}%`
+          : 'Progress: -';
 
-        // Safe indicators (cuántas muertes sin bajar el valor mostrado a 2 decimales, base=floor)
-        kdSafe.textContent = (kdS.safeDeaths === Infinity) ? 'Safe: ∞' : `Safe: ${kdS.safeDeaths}`;
-        kdaSafe.textContent = (kdaS.safeDeaths === Infinity) ? 'Safe: ∞' : `Safe: ${kdaS.safeDeaths}`;
+        // Safe indicators
+        kdSafe.textContent = (kdS.safeDeaths === Infinity) ? 'Current buffer: INF' : `Current buffer: ${kdS.safeDeaths} deaths without descending.`;
+        kdaSafe.textContent = (kdaS.safeDeaths === Infinity) ? 'Current buffer: INF' : `Current buffer: ${kdaS.safeDeaths} deaths without descending.`;
 
-        // Mini dot color: ok if needed==0 (ya estás en el borde), else ok if progress>=0.5 maybe
+        // Mini dot color: green if close to next threshold
         setMiniState(kdMini, kdS.needed === 0 || kdS.progress >= 0.5);
         setMiniState(kdaMini, kdaS.needed === 0 || kdaS.progress >= 0.5);
 
-        // Output text (más “debuggable”)
-        const kdBase = Number.isFinite(kdS.shown) ? fmt(kdS.shown,2) : '—';
-        const kdaBase = Number.isFinite(kdaS.shown) ? fmt(kdaS.shown,2) : '—';
-
-        outEl.textContent =
-          `n1 (kills)   = ${fmt(n1)}\n` +
-          `n2 (deaths)  = ${fmt(n2)}\n` +
-          `n3 (assists) = ${fmt(n3)}\n\n` +
-          `KD  = ${fmt(kd,3)}  (mostrado ${kdBase})\n` +
-          `  +0.01 → ${fmt(kdS.nextShown,2)}: faltan ${kdS.needed} kills\n` +
-          `  Safe por ${kdS.safeDeaths === Infinity ? '∞' : kdS.safeDeaths} deaths\n\n` +
-          `KDA = ${fmt(kda,3)}  (mostrado ${kdaBase})\n` +
-          `  +0.01 → ${fmt(kdaS.nextShown,2)}: faltan ${kdaS.needed} kills\n` +
-          `  Safe por ${kdaS.safeDeaths === Infinity ? '∞' : kdaS.safeDeaths} deaths\n`;
+        resultCopyText = buildResultCopyText({
+          kills: n1,
+          deaths: n2,
+          assists: n3,
+          kd,
+          kdNextShown: kdS.nextShown,
+          kdNeeded: kdS.needed,
+          kdSafeDeaths: kdS.safeDeaths,
+          kda,
+          kdaNextShown: kdaS.nextShown,
+          kdaNeeded: kdaS.needed,
+          kdaSafeDeaths: kdaS.safeDeaths,
+        });
 
         copyBtn.disabled = false;
-        setState('ok','Listo ✅');
+        setState('ok','Analysis complete [OK]');
       }catch(err){
-        outEl.textContent = `Error OCR: ${err?.message || err}`;
-        setState('bad','Error OCR ❌');
+        resultCopyText = 'Could not analyze the image.';
+        setState('bad','Could not analyze the image.');
       }
     }
 
     function describeClipboardItems(items){
-      const types = [...items].map(i => i.type || '(sin type)');
-      debugEl.textContent = `Debug: items=${items.length} types=[${types.join(', ')}]`;
+      debugEl.textContent = `Status: ${items.length} clipboard item(s) detected.`;
     }
 
-    // ✅ Manejador de paste (más robusto)
+    // Robust paste handler
     async function onPaste(event){
       event.preventDefault();
       event.stopPropagation();
       const cd = event.clipboardData;
       if(!cd){
-        debugEl.textContent = 'Debug: clipboardData es null (limitación del navegador).';
-        setState('bad','No pude acceder al portapapeles desde este evento.');
+        debugEl.textContent = 'Status: clipboard is not accessible from this event.';
+        setState('bad','Could not read clipboard.');
         return;
       }
 
@@ -1196,13 +1228,13 @@
 
       const imgItem = [...cd.items].find(i => i.type && i.type.startsWith('image/'));
       if(!imgItem){
-        setState('bad','Pegaste algo que no es imagen. Copiá una imagen/screenshot.');
+        setState('bad','Pasted content is not a valid image.');
         return;
       }
 
       const file = imgItem.getAsFile();
       if(!file){
-        setState('bad','No pude convertir el item a File.');
+        setState('bad','Could not convert clipboard item to File.');
         return;
       }
 
@@ -1210,29 +1242,29 @@
     }
 
     function focusDropZone(){
-      // Delay chiquito para ganarle al iframe / repaint
+      // Small delay to avoid iframe/repaint timing issues
       setTimeout(() => {
         try { dropZone.focus(); } catch {}
       }, 0);
     }
 
-    // Escuchamos en varios lugares, en CAPTURE, para que no se pierda.
+    // Listen in capture phase so paste is not swallowed.
     window.addEventListener('paste', onPaste, true);
 
-    // ✅ Fallback: leer desde clipboard API (requiere HTTPS/localhost y permiso)
+    // Fallback: read via clipboard API (requires HTTPS/localhost and permission)
     readBtn.addEventListener('click', async () => {
       try{
         if(!navigator.clipboard || !navigator.clipboard.read){
-          setState('bad','Este navegador no soporta leer imágenes con clipboard.read().');
-          debugEl.textContent = 'Debug: navigator.clipboard.read no disponible.';
+          setState('bad','This browser does not allow image paste from that button.');
+          debugEl.textContent = 'Status: this feature is not available in this browser.';
           return;
         }
-        setState('idle','Leyendo portapapeles (permiso)…');
+        setState('idle','Reading clipboard...');
 
         const items = await navigator.clipboard.read();
-        debugEl.textContent = `Debug: clipboard.read() items=${items.length}`;
+        debugEl.textContent = `Status: ${items.length} clipboard item(s) read.`;
 
-        // Busca el primer item con tipo image/*
+        // Find the first image/* clipboard item
         for(const item of items){
           const imgType = item.types.find(t => t.startsWith('image/'));
           if(imgType){
@@ -1243,10 +1275,10 @@
           }
         }
 
-        setState('bad','No encontré una imagen en el portapapeles.');
+        setState('bad','No image found in clipboard.');
       }catch(e){
-        setState('bad','No pude leer el portapapeles (permiso/HTTPS).');
-        debugEl.textContent = `Debug error: ${e?.message || e}`;
+        setState('bad','Could not read clipboard. Check browser permissions.');
+        debugEl.textContent = `Status: ${e?.message || e}`;
       }
     });
 
@@ -1254,3 +1286,10 @@
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
