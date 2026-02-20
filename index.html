@@ -425,6 +425,12 @@
       border:1px solid var(--stroke-soft);
       background:rgba(0,0,0,.24);
     }
+    .chartWrapDonut{
+      height:260px;
+      max-height:260px;
+      max-width:360px;
+      margin:0 auto;
+    }
 
     .chartPanel.chartWide{
       grid-column: span 2;
@@ -598,6 +604,13 @@
                   <canvas id="chartAssists"></canvas>
                 </div>
               </div>
+              <div class="chartPanel chartWide">
+                <div class="chartTitle">Kills + Assists Composition</div>
+                <div class="sub" id="compositionSub">No data yet.</div>
+                <div class="chartWrap chartWrapDonut">
+                  <canvas id="compositionChart"></canvas>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -635,11 +648,13 @@
     const copyBtn = document.getElementById('copyBtn');
     const dropZone = document.getElementById('dropZone');
     const debugEl = document.getElementById('debug');
+    const compositionSub = document.getElementById("compositionSub");
 
     // === AUTH + BACKEND CONFIG ===
     const histSub = document.getElementById("histSub");
 
     let metricsCharts = {};
+    let compositionChart = null;
     let resultCopyText = "-";
 
     const GOOGLE_CLIENT_ID = "1068658646999-j72o9l8k0s0bkdu9iviss6o6p31p8mv4.apps.googleusercontent.com";
@@ -696,6 +711,75 @@
         try { chart?.destroy(); } catch (_) {}
       });
       metricsCharts = {};
+    }
+
+    function destroyCompositionChart() {
+      if (compositionChart) {
+        try { compositionChart.destroy(); } catch (_) {}
+        compositionChart = null;
+      }
+    }
+
+    function renderCompositionChart(kills, assists) {
+      const canvas = document.getElementById("compositionChart");
+      if (!canvas) return;
+
+      const safeKills = Math.max(0, Number(kills) || 0);
+      const safeAssists = Math.max(0, Number(assists) || 0);
+      const total = safeKills + safeAssists;
+
+      destroyCompositionChart();
+
+      if (total <= 0) {
+        if (compositionSub) compositionSub.textContent = "No data yet.";
+        return;
+      }
+
+      const killsPct = Math.round((safeKills / total) * 100);
+      const assistsPct = 100 - killsPct;
+      if (compositionSub) {
+        compositionSub.textContent = `Kills ${killsPct}% | Assists ${assistsPct}%`;
+      }
+
+      compositionChart = new Chart(canvas.getContext("2d"), {
+        type: "doughnut",
+        data: {
+          labels: ["Kills", "Assists"],
+          datasets: [
+            {
+              data: [safeKills, safeAssists],
+              backgroundColor: ["#4be39d", "#ffd166"],
+              borderColor: ["#4be39d", "#ffd166"],
+              borderWidth: 1.5,
+              hoverOffset: 6,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: "70%",
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: {
+                color: "rgba(198,222,246,.9)",
+                boxWidth: 12,
+              },
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const val = Number(ctx.parsed) || 0;
+                  const pct = total ? Math.round((val / total) * 100) : 0;
+                  return `${ctx.label}: ${val} (${pct}%)`;
+                },
+              },
+            },
+          },
+          animation: false,
+        },
+      });
     }
 
     function chartOptions(shouldStartAtZero = false) {
@@ -917,6 +1001,8 @@
       setAuthUI(false);
       if (histSub) histSub.textContent = "Sign in to see your history.";
       destroyMetricCharts();
+      destroyCompositionChart();
+      if (compositionSub) compositionSub.textContent = "Sign in to see your history.";
     });
 
     function computeKD(r) {
@@ -988,8 +1074,16 @@
             : "No saved matches yet.";
         }
 
-        if (count) renderMetricCharts(payload.readings);
-        else destroyMetricCharts();
+        if (count) {
+          renderMetricCharts(payload.readings);
+          const sumKills = payload.readings.reduce((acc, r) => acc + (Number(r.kills) || 0), 0);
+          const sumAssists = payload.readings.reduce((acc, r) => acc + (Number(r.assists) || 0), 0);
+          renderCompositionChart(sumKills, sumAssists);
+        } else {
+          destroyMetricCharts();
+          destroyCompositionChart();
+          if (compositionSub) compositionSub.textContent = "No data yet.";
+        }
       } catch (e) {
         // AbortError is expected when cancelling a previous request
         if (String(e?.name) !== "AbortError") console.warn("refreshHistory error:", e);
@@ -1002,6 +1096,8 @@
 
     function reset(){
       resultCopyText = "-";
+      destroyCompositionChart();
+      if (compositionSub) compositionSub.textContent = "No data yet.";
       previewBox.style.display = 'none';
       previewEl.src = '';
 
@@ -1231,6 +1327,7 @@
           kdaNeeded: kdaS.needed,
           kdaSafeDeaths: kdaS.safeDeaths,
         });
+        renderCompositionChart(Math.trunc(n1), Math.trunc(n3));
 
         copyBtn.disabled = false;
         setState('ok','Analysis complete [OK]');
@@ -1317,6 +1414,3 @@
   </script>
 </body>
 </html>
-
-
-
