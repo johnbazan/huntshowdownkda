@@ -532,24 +532,6 @@
         <div class="body">
           <div class="kpis">
             <div class="kpi">
-              <div class="label">KD</div>
-              <div class="value" id="kdBig">-</div>
-              <div class="sub" id="kdSub">-</div>
-              <div class="badge"><span class="mini" id="kdMini"></span><span id="kdNext">-</span></div>
-
-              <!-- NEW: progress to next 0.01 + safe -->
-              <div class="meter">
-                <div class="meterTop">
-                  <span id="kdProgLabel">-</span>
-                  <span><b id="kdSafe">-</b></span>
-                </div>
-                <div class="progress" aria-label="KD progress">
-                  <div class="bar" id="kdBar"></div>
-                </div>
-              </div>
-            </div>
-
-            <div class="kpi">
               <div class="label">KDA</div>
               <div class="value" id="kdaBig">-</div>
               <div class="sub" id="kdaSub">-</div>
@@ -563,6 +545,24 @@
                 </div>
                 <div class="progress" aria-label="KDA progress">
                   <div class="bar" id="kdaBar"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="kpi">
+              <div class="label">KD</div>
+              <div class="value" id="kdBig">-</div>
+              <div class="sub" id="kdSub">-</div>
+              <div class="badge"><span class="mini" id="kdMini"></span><span id="kdNext">-</span></div>
+
+              <!-- NEW: progress to next 0.01 + safe -->
+              <div class="meter">
+                <div class="meterTop">
+                  <span id="kdProgLabel">-</span>
+                  <span><b id="kdSafe">-</b></span>
+                </div>
+                <div class="progress" aria-label="KD progress">
+                  <div class="bar" id="kdBar"></div>
                 </div>
               </div>
             </div>
@@ -663,6 +663,9 @@
     const userPill = document.getElementById("userPill");
     const userLabel = document.getElementById("userLabel");
     const logoutBtn = document.getElementById("logoutBtn");
+    const TOKEN_EXP_SKEW_MS = 60 * 1000; // refresh 60s before token expiry
+    const PROMPT_COOLDOWN_MS = 10 * 1000;
+    let lastSilentPromptAt = 0;
 
     function authExpired(message = "Your session expired. Please sign in again.") {
       // 1) UX notice
@@ -672,12 +675,7 @@
       localStorage.removeItem("google_id_token");
       setAuthUI(false);
 
-      // 3) optional: if GIS is available, disable auto-select
-      try {
-        if (window.google?.accounts?.id?.disableAutoSelect) {
-          google.accounts.id.disableAutoSelect();
-        }
-      } catch (_) {}
+      maybePromptSilentReauth();
     }
 
     function setAuthUI(isLoggedIn, labelText = "Signed in") {
@@ -692,18 +690,51 @@
       }
     }
 
-    function getEmailFromIdToken(idToken) {
+    function parseIdTokenPayload(idToken) {
       try {
         if (!idToken || !idToken.includes(".")) return null;
         const payloadB64 = idToken.split(".")[1];
         const normalized = payloadB64.replace(/-/g, "+").replace(/_/g, "/");
         const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), "=");
         const json = atob(padded);
-        const payload = JSON.parse(json);
-        return payload?.email || null;
+        return JSON.parse(json);
       } catch (_) {
         return null;
       }
+    }
+
+    function getEmailFromIdToken(idToken) {
+      return parseIdTokenPayload(idToken)?.email || null;
+    }
+
+    function isTokenExpired(idToken) {
+      const payload = parseIdTokenPayload(idToken);
+      const expSec = Number(payload?.exp);
+      if (!Number.isFinite(expSec) || expSec <= 0) return false;
+      return Date.now() >= ((expSec * 1000) - TOKEN_EXP_SKEW_MS);
+    }
+
+    function maybePromptSilentReauth() {
+      const now = Date.now();
+      if (now - lastSilentPromptAt < PROMPT_COOLDOWN_MS) return;
+      lastSilentPromptAt = now;
+      try {
+        if (window.google?.accounts?.id?.prompt) {
+          google.accounts.id.prompt();
+        }
+      } catch (_) {}
+    }
+
+    function getValidStoredToken() {
+      const token = localStorage.getItem("google_id_token");
+      if (!token) return null;
+      if (isTokenExpired(token)) {
+        localStorage.removeItem("google_id_token");
+        setAuthUI(false);
+        maybePromptSilentReauth();
+        return null;
+      }
+      return token;
     }
 
     function destroyMetricCharts() {
@@ -888,7 +919,7 @@
     }
 
     async function postReadingIfLoggedIn(kills, deaths, assists) {
-      const token = localStorage.getItem("google_id_token");
+      const token = getValidStoredToken();
       if (!token) return; // no logueado => no postea
 
       try {
@@ -988,10 +1019,11 @@
         shape: "rectangular",
       });
 
-      const token = localStorage.getItem("google_id_token");
+      const token = getValidStoredToken();
       const email = getEmailFromIdToken(token);
       setAuthUI(!!token, token ? (email ? `Signed in [OK] ${email}` : "Signed in [OK]") : "-");
       if (token) refreshHistoryIfLoggedIn();
+      else maybePromptSilentReauth();
     }
 
     window.addEventListener("load", initGoogleLogin);
@@ -1017,7 +1049,7 @@
     const ME_MIN_INTERVAL_MS = 1200; // 1.2s throttle
 
     async function fetchMyReadings() {
-      const token = localStorage.getItem("google_id_token");
+      const token = getValidStoredToken();
       if (!token) return null;
 
       // Abort previous request if still running
@@ -1046,7 +1078,7 @@
 
 
     async function refreshHistoryIfLoggedIn() {
-      const token = localStorage.getItem("google_id_token");
+      const token = getValidStoredToken();
       if (!token) return;
 
       // lock: if one request is running, skip
@@ -1076,9 +1108,10 @@
 
         if (count) {
           renderMetricCharts(payload.readings);
-          const sumKills = payload.readings.reduce((acc, r) => acc + (Number(r.kills) || 0), 0);
-          const sumAssists = payload.readings.reduce((acc, r) => acc + (Number(r.assists) || 0), 0);
-          renderCompositionChart(sumKills, sumAssists);
+          const lastReading = payload.readings[count - 1];
+          const lastKills = Number(lastReading?.kills) || 0;
+          const lastAssists = Number(lastReading?.assists) || 0;
+          renderCompositionChart(lastKills, lastAssists);
         } else {
           destroyMetricCharts();
           destroyCompositionChart();
