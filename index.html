@@ -490,7 +490,7 @@
           </div>
 
           <!-- Google button renders here -->
-        <div id="googleBtn"></div>
+        <div id="googleBtn" style="display:none;"></div>
 
         </div>
       </div>
@@ -666,6 +666,8 @@
     const PROMPT_COOLDOWN_MS = 10 * 1000;
     let lastSilentPromptAt = 0;
     let currentSession = null;
+    let googleLoginInitialized = false;
+    let googleButtonRendered = false;
 
     function authExpired(message = "Your session expired. Please sign in again.") {
       setState("bad", message);
@@ -678,13 +680,31 @@
       maybePromptSilentReauth();
     }
 
-    function setAuthUI(isLoggedIn, labelText = "Signed in") {
-      const btn = googleBtn; // container where Google button is rendered
+    function showLoggedOkStatus() {
+      setState("ok", "logged OK");
+    }
+
+    function ensureGoogleButtonRendered() {
+      if (googleButtonRendered || !googleLoginInitialized || !googleBtn) return;
+
+      google.accounts.id.renderButton(googleBtn, {
+        theme: "outline",
+        size: "large",
+        text: "signin_with",
+        shape: "rectangular",
+      });
+      googleButtonRendered = true;
+    }
+
+    function setAuthUI(isLoggedIn, labelText = "logged OK") {
+      const btn = googleBtn;
       if (isLoggedIn) {
         if (btn) btn.style.display = "none";
         userPill.style.display = "inline-flex";
         userLabel.textContent = labelText;
+        showLoggedOkStatus();
       } else {
+        ensureGoogleButtonRendered();
         if (btn) btn.style.display = "block";
         userPill.style.display = "none";
       }
@@ -731,8 +751,8 @@
       const session = await fetchSession();
       if (session) {
         const label = session.email
-          ? `Signed in [OK] ${session.email}`
-          : (session.username ? `Signed in [OK] ${session.username}` : "Signed in [OK]");
+          ? `logged OK ${session.email}`
+          : (session.username ? `logged OK ${session.username}` : "logged OK");
         setAuthUI(true, label);
         return session;
       }
@@ -1009,8 +1029,8 @@
         const payload = await res.json();
         currentSession = payload;
         const label = payload.email
-          ? `Signed in [OK] ${payload.email}`
-          : (payload.username ? `Signed in [OK] ${payload.username}` : "Signed in [OK]");
+          ? `logged OK ${payload.email}`
+          : (payload.username ? `logged OK ${payload.username}` : "logged OK");
         setAuthUI(true, label);
         refreshHistoryIfLoggedIn();
       } catch (e) {
@@ -1038,16 +1058,16 @@
         client_id: GOOGLE_CLIENT_ID,
         callback: handleCredentialResponse,
       });
+      googleLoginInitialized = true;
 
-      google.accounts.id.renderButton(googleBtn, {
-        theme: "outline",
-        size: "large",
-        text: "signin_with",
-        shape: "rectangular",
-      });
+      syncSessionUI(false).then((session) => {
+        if (session) {
+          refreshHistoryIfLoggedIn();
+          return;
+        }
 
-      syncSessionUI(true).then((session) => {
-        if (session) refreshHistoryIfLoggedIn();
+        ensureGoogleButtonRendered();
+        if (googleBtn) googleBtn.style.display = "block";
       });
     }
 
@@ -1064,6 +1084,7 @@
       }
       currentSession = null;
       setAuthUI(false);
+      setState("idle", "Ready to analyze your screenshot");
       if (histSub) histSub.textContent = "Sign in to see your history.";
       destroyMetricCharts();
       destroyCompositionChart();
