@@ -441,6 +441,47 @@
       }
     }
 
+    .historySummary{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+    }
+
+    .historyStat{
+      border:1px solid var(--stroke-soft);
+      border-radius:12px;
+      background:rgba(0,0,0,.24);
+      padding:14px 12px;
+    }
+
+    .historyStatLabel{
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:.8px;
+      color:rgba(200,224,248,.72);
+      margin-bottom:6px;
+    }
+
+    .historyStatValue{
+      font-family: "Orbitron", "Space Grotesk", sans-serif;
+      font-size:28px;
+      line-height:1;
+      color:rgba(236,245,255,.96);
+      margin-bottom:6px;
+    }
+
+    .historyStatSub{
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.4;
+    }
+
+    @media (max-width:760px){
+      .historySummary{
+        grid-template-columns:1fr;
+      }
+    }
+
     .chartWrap canvas{
       display:block;
       width:100% !important;
@@ -604,6 +645,22 @@
                   <canvas id="chartAssists"></canvas>
                 </div>
               </div>
+              <div class="chartPanel">
+                <div class="chartTitle">Last 20 Summary</div>
+                <div class="sub" id="historySummarySub">No data yet.</div>
+                <div class="historySummary">
+                  <div class="historyStat">
+                    <div class="historyStatLabel">KD</div>
+                    <div class="historyStatValue" id="historyKdValue">-</div>
+                    <div class="historyStatSub" id="historyKdSub">Last 20 matches.</div>
+                  </div>
+                  <div class="historyStat">
+                    <div class="historyStatLabel">KDA</div>
+                    <div class="historyStatValue" id="historyKdaValue">-</div>
+                    <div class="historyStatSub" id="historyKdaSub">Last 20 matches.</div>
+                  </div>
+                </div>
+              </div>
               <div class="chartPanel chartWide">
                 <div class="chartTitle">Kills + Assists Composition</div>
                 <div class="sub" id="compositionSub">No data yet.</div>
@@ -649,6 +706,11 @@
     const dropZone = document.getElementById('dropZone');
     const debugEl = document.getElementById('debug');
     const compositionSub = document.getElementById("compositionSub");
+    const historySummarySub = document.getElementById("historySummarySub");
+    const historyKdValue = document.getElementById("historyKdValue");
+    const historyKdSub = document.getElementById("historyKdSub");
+    const historyKdaValue = document.getElementById("historyKdaValue");
+    const historyKdaSub = document.getElementById("historyKdaSub");
 
     // === AUTH + BACKEND CONFIG ===
     const histSub = document.getElementById("histSub");
@@ -676,6 +738,7 @@
       if (histSub) histSub.textContent = "Sign in to see your history.";
       destroyMetricCharts();
       destroyCompositionChart();
+      resetHistorySummary("Sign in to see your history.");
       if (compositionSub) compositionSub.textContent = "Sign in to see your history.";
       maybePromptSilentReauth();
     }
@@ -772,6 +835,48 @@
       if (compositionChart) {
         try { compositionChart.destroy(); } catch (_) {}
         compositionChart = null;
+      }
+    }
+
+    function resetHistorySummary(message = "No data yet.") {
+      if (historySummarySub) historySummarySub.textContent = message;
+      if (historyKdValue) historyKdValue.textContent = "-";
+      if (historyKdSub) historyKdSub.textContent = "Last 20 matches.";
+      if (historyKdaValue) historyKdaValue.textContent = "-";
+      if (historyKdaSub) historyKdaSub.textContent = "Last 20 matches.";
+    }
+
+    function renderHistorySummary(readings) {
+      const list = Array.isArray(readings) ? readings.slice(0, 20) : [];
+      if (!list.length) {
+        resetHistorySummary("No data yet.");
+        return;
+      }
+
+      const totals = list.reduce((acc, reading) => {
+        acc.kills += Math.max(0, Number(reading?.kills) || 0);
+        acc.deaths += Math.max(0, Number(reading?.deaths) || 0);
+        acc.assists += Math.max(0, Number(reading?.assists) || 0);
+        return acc;
+      }, { kills: 0, deaths: 0, assists: 0 });
+
+      const kd = totals.deaths > 0 ? (totals.kills / totals.deaths) : null;
+      const kda = totals.deaths > 0 ? ((totals.kills + totals.assists) / totals.deaths) : null;
+
+      if (historySummarySub) {
+        historySummarySub.textContent = `${list.length} matches | K ${totals.kills} | D ${totals.deaths} | A ${totals.assists}`;
+      }
+      if (historyKdValue) historyKdValue.textContent = totals.deaths > 0 ? fmt(kd, 3) : "INF";
+      if (historyKdSub) {
+        historyKdSub.textContent = totals.deaths > 0
+          ? `${totals.kills} kills / ${totals.deaths} deaths`
+          : `${totals.kills} kills with 0 deaths`;
+      }
+      if (historyKdaValue) historyKdaValue.textContent = totals.deaths > 0 ? fmt(kda, 3) : "INF";
+      if (historyKdaSub) {
+        historyKdaSub.textContent = totals.deaths > 0
+          ? `${totals.kills + totals.assists} impact / ${totals.deaths} deaths`
+          : `${totals.kills + totals.assists} impact with 0 deaths`;
       }
     }
 
@@ -1088,6 +1193,7 @@
       if (histSub) histSub.textContent = "Sign in to see your history.";
       destroyMetricCharts();
       destroyCompositionChart();
+      resetHistorySummary("Sign in to see your history.");
       if (compositionSub) compositionSub.textContent = "Sign in to see your history.";
     });
 
@@ -1147,6 +1253,7 @@
 
         if (!payload || !payload.readings) {
           if (histSub) histSub.textContent = "Sign in to see your history.";
+          resetHistorySummary("Sign in to see your history.");
           return;
         }
         
@@ -1160,6 +1267,7 @@
 
         if (count) {
           renderMetricCharts(payload.readings);
+          renderHistorySummary(payload.readings);
           const lastReading = payload.readings[count - 1];
           const lastKills = Number(lastReading?.kills) || 0;
           const lastAssists = Number(lastReading?.assists) || 0;
@@ -1167,6 +1275,7 @@
         } else {
           destroyMetricCharts();
           destroyCompositionChart();
+          resetHistorySummary("No data yet.");
           if (compositionSub) compositionSub.textContent = "No data yet.";
         }
       } catch (e) {
@@ -1182,6 +1291,7 @@
     function reset(){
       resultCopyText = "-";
       destroyCompositionChart();
+      resetHistorySummary("No data yet.");
       if (compositionSub) compositionSub.textContent = "No data yet.";
       previewBox.style.display = 'none';
       previewEl.src = '';
