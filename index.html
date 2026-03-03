@@ -663,18 +663,18 @@
     const userPill = document.getElementById("userPill");
     const userLabel = document.getElementById("userLabel");
     const logoutBtn = document.getElementById("logoutBtn");
-    const TOKEN_EXP_SKEW_MS = 60 * 1000; // refresh 60s before token expiry
     const PROMPT_COOLDOWN_MS = 10 * 1000;
     let lastSilentPromptAt = 0;
+    let currentSession = null;
 
     function authExpired(message = "Your session expired. Please sign in again.") {
-      // 1) UX notice
       setState("bad", message);
-
-      // 2) clear local token and show login button
-      localStorage.removeItem("google_id_token");
+      currentSession = null;
       setAuthUI(false);
-
+      if (histSub) histSub.textContent = "Sign in to see your history.";
+      destroyMetricCharts();
+      destroyCompositionChart();
+      if (compositionSub) compositionSub.textContent = "Sign in to see your history.";
       maybePromptSilentReauth();
     }
 
@@ -690,30 +690,6 @@
       }
     }
 
-    function parseIdTokenPayload(idToken) {
-      try {
-        if (!idToken || !idToken.includes(".")) return null;
-        const payloadB64 = idToken.split(".")[1];
-        const normalized = payloadB64.replace(/-/g, "+").replace(/_/g, "/");
-        const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), "=");
-        const json = atob(padded);
-        return JSON.parse(json);
-      } catch (_) {
-        return null;
-      }
-    }
-
-    function getEmailFromIdToken(idToken) {
-      return parseIdTokenPayload(idToken)?.email || null;
-    }
-
-    function isTokenExpired(idToken) {
-      const payload = parseIdTokenPayload(idToken);
-      const expSec = Number(payload?.exp);
-      if (!Number.isFinite(expSec) || expSec <= 0) return false;
-      return Date.now() >= ((expSec * 1000) - TOKEN_EXP_SKEW_MS);
-    }
-
     function maybePromptSilentReauth() {
       const now = Date.now();
       if (now - lastSilentPromptAt < PROMPT_COOLDOWN_MS) return;
@@ -725,16 +701,44 @@
       } catch (_) {}
     }
 
-    function getValidStoredToken() {
-      const token = localStorage.getItem("google_id_token");
-      if (!token) return null;
-      if (isTokenExpired(token)) {
-        localStorage.removeItem("google_id_token");
+    function isLoggedIn() {
+      return !!currentSession;
+    }
+
+    async function fetchSession() {
+      const res = await fetch(`${BACKEND_BASE_URL}/auth/session`, {
+        credentials: "include",
+      });
+
+      if (res.status === 401) {
+        currentSession = null;
         setAuthUI(false);
-        maybePromptSilentReauth();
         return null;
       }
-      return token;
+
+      if (!res.ok) {
+        const err = await res.text().catch(() => "");
+        console.warn("GET /auth/session failed:", res.status, err);
+        return null;
+      }
+
+      const session = await res.json();
+      currentSession = session;
+      return session;
+    }
+
+    async function syncSessionUI(promptIfMissing = false) {
+      const session = await fetchSession();
+      if (session) {
+        const label = session.email
+          ? `Signed in [OK] ${session.email}`
+          : (session.username ? `Signed in [OK] ${session.username}` : "Signed in [OK]");
+        setAuthUI(true, label);
+        return session;
+      }
+
+      if (promptIfMissing) maybePromptSilentReauth();
+      return null;
     }
 
     function destroyMetricCharts() {
@@ -919,16 +923,15 @@
     }
 
     async function postReadingIfLoggedIn(kills, deaths, assists) {
-      const token = getValidStoredToken();
-      if (!token) return; // no logueado => no postea
+      if (!isLoggedIn()) return;
 
       try {
         const res = await fetch(`${BACKEND_BASE_URL}/readings`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
           },
+          credentials: "include",
           body: JSON.stringify({ kills, deaths, assists }),
         });
 
@@ -985,13 +988,37 @@
     }
 
     // Google callback (GIS)
-    function handleCredentialResponse(response) {
-      localStorage.setItem("google_id_token", response.credential);
-      const email = getEmailFromIdToken(response.credential);
-      setAuthUI(true, email ? `Signed in [OK] ${email}` : "Signed in [OK]");
-      refreshHistoryIfLoggedIn();
-      focusDropZone(); // keep paste target focused
+    async function handleCredentialResponse(response) {
+      try {
+        const res = await fetch(`${BACKEND_BASE_URL}/auth/google/login`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ credential: response.credential }),
+        });
 
+        if (!res.ok) {
+          const err = await res.text().catch(() => "");
+          console.warn("POST /auth/google/login failed:", res.status, err);
+          authExpired("Could not start your session. Sign in again.");
+          return;
+        }
+
+        const payload = await res.json();
+        currentSession = payload;
+        const label = payload.email
+          ? `Signed in [OK] ${payload.email}`
+          : (payload.username ? `Signed in [OK] ${payload.username}` : "Signed in [OK]");
+        setAuthUI(true, label);
+        refreshHistoryIfLoggedIn();
+      } catch (e) {
+        console.warn("Google login exchange failed:", e);
+        authExpired("Could not reach the backend to start your session.");
+      } finally {
+        focusDropZone();
+      }
     }
     window.handleCredentialResponse = handleCredentialResponse;
 
@@ -1019,17 +1046,23 @@
         shape: "rectangular",
       });
 
-      const token = getValidStoredToken();
-      const email = getEmailFromIdToken(token);
-      setAuthUI(!!token, token ? (email ? `Signed in [OK] ${email}` : "Signed in [OK]") : "-");
-      if (token) refreshHistoryIfLoggedIn();
-      else maybePromptSilentReauth();
+      syncSessionUI(true).then((session) => {
+        if (session) refreshHistoryIfLoggedIn();
+      });
     }
 
     window.addEventListener("load", initGoogleLogin);
   
-    logoutBtn?.addEventListener("click", () => {
-      localStorage.removeItem("google_id_token");
+    logoutBtn?.addEventListener("click", async () => {
+      try {
+        await fetch(`${BACKEND_BASE_URL}/auth/logout`, {
+          method: "POST",
+          credentials: "include",
+        });
+      } catch (e) {
+        console.warn("POST /auth/logout failed:", e);
+      }
+      currentSession = null;
       setAuthUI(false);
       if (histSub) histSub.textContent = "Sign in to see your history.";
       destroyMetricCharts();
@@ -1049,8 +1082,7 @@
     const ME_MIN_INTERVAL_MS = 1200; // 1.2s throttle
 
     async function fetchMyReadings() {
-      const token = getValidStoredToken();
-      if (!token) return null;
+      if (!isLoggedIn()) return null;
 
       // Abort previous request if still running
       if (meAbort) {
@@ -1059,7 +1091,7 @@
       meAbort = new AbortController();
 
       const res = await fetch(`${BACKEND_BASE_URL}/me`, {
-        headers: { "Authorization": `Bearer ${token}` },
+        credentials: "include",
         signal: meAbort.signal,
       });
 
@@ -1078,8 +1110,7 @@
 
 
     async function refreshHistoryIfLoggedIn() {
-      const token = getValidStoredToken();
-      if (!token) return;
+      if (!isLoggedIn()) return;
 
       // lock: if one request is running, skip
       if (meInFlight) return;
