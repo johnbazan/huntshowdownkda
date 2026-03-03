@@ -853,18 +853,19 @@
         return;
       }
 
-      const totals = list.reduce((acc, reading) => {
-        acc.kills += Math.max(0, Number(reading?.kills) || 0);
-        acc.deaths += Math.max(0, Number(reading?.deaths) || 0);
-        acc.assists += Math.max(0, Number(reading?.assists) || 0);
-        return acc;
-      }, { kills: 0, deaths: 0, assists: 0 });
+      const newest = list[0];
+      const oldest = list[list.length - 1];
+      const totals = {
+        kills: Math.max(0, (Number(newest?.kills) || 0) - (Number(oldest?.kills) || 0)),
+        deaths: Math.max(0, (Number(newest?.deaths) || 0) - (Number(oldest?.deaths) || 0)),
+        assists: Math.max(0, (Number(newest?.assists) || 0) - (Number(oldest?.assists) || 0)),
+      };
 
       const kd = totals.deaths > 0 ? (totals.kills / totals.deaths) : null;
       const kda = totals.deaths > 0 ? ((totals.kills + totals.assists) / totals.deaths) : null;
 
       if (historySummarySub) {
-        historySummarySub.textContent = `${list.length} matches | K ${totals.kills} | D ${totals.deaths} | A ${totals.assists}`;
+        historySummarySub.textContent = `${list.length} readings | K ${totals.kills} | D ${totals.deaths} | A ${totals.assists}`;
       }
       if (historyKdValue) historyKdValue.textContent = totals.deaths > 0 ? fmt(kd, 3) : "INF";
       if (historyKdSub) {
@@ -1034,6 +1035,7 @@
 
     let lastPostKey = null;
     let lastPostAt = 0;
+    let latestSavedReading = null;
 
     function shouldPost(kills, deaths, assists) {
       const key = `${kills}|${deaths}|${assists}`;
@@ -1047,8 +1049,31 @@
       return true;
     }
 
+    function readingMatches(reading, kills, deaths, assists) {
+      if (!reading) return false;
+      return (Number(reading?.kills) || 0) === kills
+        && (Number(reading?.deaths) || 0) === deaths
+        && (Number(reading?.assists) || 0) === assists;
+    }
+
+    async function getLatestSavedReading(forceRefresh = false) {
+      if (!isLoggedIn()) return null;
+      if (!forceRefresh && latestSavedReading) return latestSavedReading;
+
+      const payload = await fetchMyReadings();
+      if (!payload || !Array.isArray(payload.readings)) return latestSavedReading;
+
+      latestSavedReading = payload.readings[0] || null;
+      return latestSavedReading;
+    }
+
     async function postReadingIfLoggedIn(kills, deaths, assists) {
-      if (!isLoggedIn()) return;
+      if (!isLoggedIn()) return { posted: false, skipped: "logged_out" };
+
+      const latestReading = await getLatestSavedReading();
+      if (readingMatches(latestReading, kills, deaths, assists)) {
+        return { posted: false, skipped: "duplicate_latest" };
+      }
 
       try {
         const res = await fetch(`${BACKEND_BASE_URL}/readings`, {
@@ -1064,17 +1089,20 @@
           //  Si el backend dice 401 => token vencido/invalid
           if (res.status === 401) {
             authExpired("Session expired. Sign in again to save matches.");
-            return;
+            return { posted: false, skipped: "unauthorized" };
           }
 
           const err = await res.json().catch(() => ({}));
           console.warn("API error:", res.status, err);
-          return;
+          return { posted: false, skipped: "request_failed" };
         }
 
         console.log("Reading guardado OK");
+        latestSavedReading = { kills, deaths, assists };
+        return { posted: true };
       } catch (e) {
         console.warn("Could not reach backend:", e);
+        return { posted: false, skipped: "network_error" };
       }
     }
 
@@ -1188,6 +1216,7 @@
         console.warn("POST /auth/logout failed:", e);
       }
       currentSession = null;
+      latestSavedReading = null;
       setAuthUI(false);
       setState("idle", "Ready to analyze your screenshot");
       if (histSub) histSub.textContent = "Sign in to see your history.";
@@ -1236,7 +1265,7 @@
     }
 
 
-    async function refreshHistoryIfLoggedIn() {
+    async function refreshHistoryIfLoggedIn(force = false) {
       if (!isLoggedIn()) return;
 
       // lock: if one request is running, skip
@@ -1244,7 +1273,7 @@
 
       // throttle: avoid frequent repeated calls
       const now = Date.now();
-      if (now - lastMeFetchAt < ME_MIN_INTERVAL_MS) return;
+      if (!force && (now - lastMeFetchAt < ME_MIN_INTERVAL_MS)) return;
       lastMeFetchAt = now;
 
       meInFlight = true;
@@ -1259,6 +1288,7 @@
         
 
         const count = payload.readings.length;
+        latestSavedReading = count ? (payload.readings[0] || null) : null;
         if (histSub) {
           histSub.textContent = count
             ? `Showing ${Math.min(20, count)} matches (oldest to newest).`
@@ -1268,11 +1298,12 @@
         if (count) {
           renderMetricCharts(payload.readings);
           renderHistorySummary(payload.readings);
-          const lastReading = payload.readings[count - 1];
+          const lastReading = payload.readings[0];
           const lastKills = Number(lastReading?.kills) || 0;
           const lastAssists = Number(lastReading?.assists) || 0;
           renderCompositionChart(lastKills, lastAssists);
         } else {
+          latestSavedReading = null;
           destroyMetricCharts();
           destroyCompositionChart();
           resetHistorySummary("No data yet.");
@@ -1460,7 +1491,14 @@
           return;
         }
 
-        postReadingIfLoggedIn(Math.trunc(n1), Math.trunc(n2), Math.trunc(n3));
+        const parsedKills = Math.trunc(n1);
+        const parsedDeaths = Math.trunc(n2);
+        const parsedAssists = Math.trunc(n3);
+
+        const postOutcome = await postReadingIfLoggedIn(parsedKills, parsedDeaths, parsedAssists);
+        if (sourceLabel === 'paste' && isLoggedIn()) {
+          await refreshHistoryIfLoggedIn(true);
+        }
 
         const kdNum = n1;
         const kdDen = n2;
@@ -1522,10 +1560,14 @@
           kdaNeeded: kdaS.needed,
           kdaSafeDeaths: kdaS.safeDeaths,
         });
-        renderCompositionChart(Math.trunc(n1), Math.trunc(n3));
+        renderCompositionChart(parsedKills, parsedAssists);
 
         copyBtn.disabled = false;
-        setState('ok','Analysis complete [OK]');
+        if (postOutcome?.skipped === "duplicate_latest") {
+          setState('ok','Analysis complete [OK] Duplicate reading not saved.');
+        } else {
+          setState('ok','Analysis complete [OK]');
+        }
       }catch(err){
         resultCopyText = 'Could not analyze the image.';
         setState('bad','Could not analyze the image.');
