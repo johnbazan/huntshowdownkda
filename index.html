@@ -646,7 +646,7 @@
                 </div>
               </div>
               <div class="chartPanel">
-                <div class="chartTitle">Last 20 Summary</div>
+                <div class="chartTitle">Realistic KD based on last matches.</div>
                 <div class="sub" id="historySummarySub">No data yet.</div>
                 <div class="historySummary">
                   <div class="historyStat">
@@ -865,7 +865,7 @@
       const kda = totals.deaths > 0 ? ((totals.kills + totals.assists) / totals.deaths) : null;
 
       if (historySummarySub) {
-        historySummarySub.textContent = `${list.length} readings | K ${totals.kills} | D ${totals.deaths} | A ${totals.assists}`;
+        historySummarySub.textContent = `Last ${list.length} matches | K ${totals.kills} | D ${totals.deaths} | A ${totals.assists}`;
       }
       if (historyKdValue) historyKdValue.textContent = totals.deaths > 0 ? fmt(kd, 3) : "INF";
       if (historyKdSub) {
