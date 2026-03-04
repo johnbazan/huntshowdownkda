@@ -982,11 +982,217 @@
     const historyKdSub = document.getElementById("historyKdSub");
     const historyKdaValue = document.getElementById("historyKdaValue");
     const historyKdaSub = document.getElementById("historyKdaSub");
+    const langEsBtn = document.getElementById("langEsBtn");
+    const langEnBtn = document.getElementById("langEnBtn");
     const theme = {
       chartGrid: "rgba(124,58,237,.10)",
       chartTicks: "#6f7787",
       chartLegend: "#4d5564",
     };
+    const I18N_STORAGE_KEY = "huntshowdownkda.language";
+    const DEFAULT_LANGUAGE = "es";
+    const translations = {
+      es: {
+        navMeta: "Panel de analiticas y graficos basado en la franquicia Hunt Showdown.",
+        navBadge: "Diseno unico / tracker en vivo",
+        heroTag: "Resumen del tracker",
+        heroTitle: "Stats de Hunt, claras e inmediatas.",
+        heroCopy: 'Pega una captura con <b>Ctrl+V</b> y obtene al instante <b>KD</b>, <b>KDA</b>, historial de partidas y graficos de composicion sin salir de la pagina.',
+        inputLabel: "Entrada",
+        inputCopy: "OCR lee kills, deaths y assists directamente desde la captura.",
+        outputLabel: "Salida",
+        outputCopy: "Ratios inmediatos, progreso al siguiente umbral e historial graficado.",
+        sessionTag: "Sesion",
+        sessionCopy: "Mantene tus ultimas lecturas sincronizadas y reutiliza la misma interfaz para revisar partida a partida.",
+        statusReady: "Listo para analizar tu captura",
+        signedIn: "Sesion iniciada",
+        signOut: "Cerrar sesion",
+        uploadTitle: "Subir captura",
+        uploadPill: "Pega tu imagen",
+        uploadHint: 'Pega tu captura con <b>Ctrl+V</b>.<br/>O usa <b>"Pegar desde el portapapeles"</b>.',
+        clear: "Limpiar",
+        pasteFromClipboard: "Pegar desde el portapapeles",
+        copyResult: "Copiar resultado",
+        resultsTitle: "Resultados",
+        resultsPill: "Kills / Deaths / Assists",
+        recentHistory: "Historial reciente",
+        chartKda: "KDA",
+        chartKd: "KD",
+        realisticKdTitle: "KD realista segun las ultimas partidas.",
+        chartKills: "Kills",
+        chartDeaths: "Deaths",
+        chartAssists: "Assists",
+        compositionTitle: "Composicion de kills + assists",
+        signInToSeeHistory: "Inicia sesion para ver tu historial.",
+        noDataYet: "Todavia no hay datos.",
+        last20Matches: "Ultimas 20 partidas.",
+        noSavedMatchesYet: "Todavia no hay partidas guardadas.",
+        showingMatches: (count) => `Mostrando ${Math.min(20, count)} partidas (de la mas antigua a la mas nueva).`,
+        historySummary: (count, totals) => `Ultimas ${count} partidas | K ${totals.kills} | D ${totals.deaths} | A ${totals.assists}`,
+        historyKdSub: (totals) => totals.deaths > 0
+          ? `${totals.kills} kills / ${totals.deaths} deaths`
+          : `${totals.kills} kills con 0 deaths`,
+        historyKdaSub: (totals) => totals.deaths > 0
+          ? `${totals.kills + totals.assists} de impacto / ${totals.deaths} deaths`
+          : `${totals.kills + totals.assists} de impacto con 0 deaths`,
+        compositionSummary: (killsPct, assistsPct) => `Kills ${killsPct}% | Assists ${assistsPct}%`,
+        resultCopyText: ({ kills, deaths, assists, kd, kdNextShown, kdNeeded, kdSafeDeaths, kda, kdaNextShown, kdaNeeded, kdaSafeDeaths, fmt }) =>
+          `Kills: ${fmt(kills)}\n` +
+          `Deaths: ${fmt(deaths)}\n` +
+          `Assists: ${fmt(assists)}\n\n` +
+          `KD: ${fmt(kd,3)}\n` +
+          `Para llegar a ${fmt(kdNextShown,2)}: faltan ${kdNeeded} kills\n` +
+          `Margen actual: ${kdSafeDeaths === Infinity ? 'INF' : kdSafeDeaths} deaths\n\n` +
+          `KDA: ${fmt(kda,3)}\n` +
+          `Para llegar a ${fmt(kdaNextShown,2)}: faltan ${kdaNeeded} kills\n` +
+          `Margen actual: ${kdaSafeDeaths === Infinity ? 'INF' : kdaSafeDeaths} deaths`,
+        loggedOk: "Sesion OK",
+        loggedOkWithName: (name) => `Sesion OK ${name}`,
+        sessionExpiredSave: "La sesion expiro. Inicia sesion de nuevo para guardar partidas.",
+        sessionExpiredView: "La sesion expiro. Inicia sesion de nuevo para ver tu historial.",
+        sessionExpiredGeneric: "Tu sesion expiro. Inicia sesion de nuevo.",
+        loginStartFailed: "No se pudo iniciar tu sesion. Vuelve a iniciar sesion.",
+        backendLoginFailed: "No se pudo conectar con el backend para iniciar tu sesion.",
+        resetDebug: "Estado: esperando imagen.",
+        copyOk: "Resultado copiado [OK]",
+        doneOk: "Listo [OK]",
+        copyFailed: "No se pudo copiar el resultado.",
+        readDataFailed: "No se pudieron leer los datos.",
+        screenshotInvalid: "La captura no contiene datos validos.",
+        screenshotReadFailed: "No se pudieron leer datos de la captura.",
+        analysisComplete: "Analisis completo [OK]",
+        analysisCompleteDuplicate: "Analisis completo [OK] La lectura duplicada no se guardo.",
+        imageAnalyzeFailed: "No se pudo analizar la imagen.",
+        clipboardItemsDetected: (count) => `Estado: ${count} elemento(s) detectado(s) en el portapapeles.`,
+        clipboardNotAccessible: "Estado: el portapapeles no es accesible desde este evento.",
+        clipboardReadFailed: "No se pudo leer el portapapeles.",
+        clipboardFileConvertFailed: "No se pudo convertir el contenido pegado a archivo.",
+        clipboardFeatureUnavailable: "Estado: esta funcion no esta disponible en este navegador.",
+        clipboardReading: "Leyendo portapapeles...",
+        clipboardItemsRead: (count) => `Estado: ${count} elemento(s) leido(s) del portapapeles.`,
+        clipboardNoImage: "No se encontro una imagen en el portapapeles.",
+        clipboardPermissionsFailed: "No se pudo leer el portapapeles. Revisa los permisos del navegador.",
+        pastedContentInvalid: "El contenido pegado no es una imagen valida.",
+        imageFromEventFailed: "No se pudo convertir el item del portapapeles en archivo.",
+        waitingImage: "Estado: esperando imagen.",
+        statusError: (message) => `Estado: ${message}`,
+        analyzingScreenshot: (source) => `Analizando captura (${source})...`,
+        killsLabel: "Kills",
+        assistsLabel: "Assists",
+        deathsLabel: "Deaths",
+        kdSubLine: (kills, deaths) => `Kills ${fmt(kills)} / Deaths ${fmt(deaths)}`,
+        kdaSubLine: (kills, assists, deaths) => `Kills ${fmt(kills)} + Assists ${fmt(assists)} / Deaths ${fmt(deaths)}`,
+        progressTo: (value, progress) => `Progreso a ${fmt(value,2)}: ${Math.round(progress * 100)}%`,
+        progressEmpty: "Progreso: -",
+        toReach: (value, needed) => `Para llegar a ${fmt(value,2)}: faltan ${needed} kills`,
+        currentBuffer: (safeDeaths) => safeDeaths === Infinity
+          ? "Margen actual: INF"
+          : `Margen actual: ${safeDeaths} deaths sin bajar.`,
+      },
+      en: {
+        navMeta: "Analytics and graphics page based on franchise Hunt Showdown videogame",
+        navBadge: "Single design / live tracker",
+        heroTag: "Tracker overview",
+        heroTitle: "Hunt stats, clean and immediate.",
+        heroCopy: 'Paste a screenshot with <b>Ctrl+V</b> and get instant <b>KD</b>, <b>KDA</b>, match history, and composition charts without leaving the page.',
+        inputLabel: "Input",
+        inputCopy: "OCR reads kills, deaths and assists from the screenshot.",
+        outputLabel: "Output",
+        outputCopy: "Immediate ratios, next threshold progress and charted history.",
+        sessionTag: "Session",
+        sessionCopy: "Keep your latest readings synced and reuse the same interface for quick match-to-match checks.",
+        statusReady: "Ready to analyze your screenshot",
+        signedIn: "Signed in",
+        signOut: "Sign out",
+        uploadTitle: "Upload Screenshot",
+        uploadPill: "Paste your image",
+        uploadHint: 'Paste your screenshot with <b>Ctrl+V</b>.<br/>Or use <b>"Paste from clipboard"</b>.',
+        clear: "Clear",
+        pasteFromClipboard: "Paste from clipboard",
+        copyResult: "Copy result",
+        resultsTitle: "Results",
+        resultsPill: "Kills / Deaths / Assists",
+        recentHistory: "Recent history",
+        chartKda: "KDA",
+        chartKd: "KD",
+        realisticKdTitle: "Realistic KD based on last matches.",
+        chartKills: "Kills",
+        chartDeaths: "Deaths",
+        chartAssists: "Assists",
+        compositionTitle: "Kills + Assists Composition",
+        signInToSeeHistory: "Sign in to see your history.",
+        noDataYet: "No data yet.",
+        last20Matches: "Last 20 matches.",
+        noSavedMatchesYet: "No saved matches yet.",
+        showingMatches: (count) => `Showing ${Math.min(20, count)} matches (oldest to newest).`,
+        historySummary: (count, totals) => `Last ${count} matches | K ${totals.kills} | D ${totals.deaths} | A ${totals.assists}`,
+        historyKdSub: (totals) => totals.deaths > 0
+          ? `${totals.kills} kills / ${totals.deaths} deaths`
+          : `${totals.kills} kills with 0 deaths`,
+        historyKdaSub: (totals) => totals.deaths > 0
+          ? `${totals.kills + totals.assists} impact / ${totals.deaths} deaths`
+          : `${totals.kills + totals.assists} impact with 0 deaths`,
+        compositionSummary: (killsPct, assistsPct) => `Kills ${killsPct}% | Assists ${assistsPct}%`,
+        resultCopyText: ({ kills, deaths, assists, kd, kdNextShown, kdNeeded, kdSafeDeaths, kda, kdaNextShown, kdaNeeded, kdaSafeDeaths, fmt }) =>
+          `Kills: ${fmt(kills)}\n` +
+          `Deaths: ${fmt(deaths)}\n` +
+          `Assists: ${fmt(assists)}\n\n` +
+          `KD: ${fmt(kd,3)}\n` +
+          `To reach ${fmt(kdNextShown,2)}: ${kdNeeded} more kills needed\n` +
+          `Current buffer: ${kdSafeDeaths === Infinity ? 'INF' : kdSafeDeaths} deaths\n\n` +
+          `KDA: ${fmt(kda,3)}\n` +
+          `To reach ${fmt(kdaNextShown,2)}: ${kdaNeeded} more kills needed\n` +
+          `Current buffer: ${kdaSafeDeaths === Infinity ? 'INF' : kdaSafeDeaths} deaths`,
+        loggedOk: "logged OK",
+        loggedOkWithName: (name) => `logged OK ${name}`,
+        sessionExpiredSave: "Session expired. Sign in again to save matches.",
+        sessionExpiredView: "Session expired. Sign in again to view your history.",
+        sessionExpiredGeneric: "Your session expired. Please sign in again.",
+        loginStartFailed: "Could not start your session. Sign in again.",
+        backendLoginFailed: "Could not reach the backend to start your session.",
+        resetDebug: "Status: waiting for image.",
+        copyOk: "Result copied [OK]",
+        doneOk: "Done [OK]",
+        copyFailed: "Could not copy result.",
+        readDataFailed: "Could not read the data.",
+        screenshotInvalid: "The screenshot does not contain valid data.",
+        screenshotReadFailed: "Could not read data from the screenshot.",
+        analysisComplete: "Analysis complete [OK]",
+        analysisCompleteDuplicate: "Analysis complete [OK] Duplicate reading not saved.",
+        imageAnalyzeFailed: "Could not analyze the image.",
+        clipboardItemsDetected: (count) => `Status: ${count} clipboard item(s) detected.`,
+        clipboardNotAccessible: "Status: clipboard is not accessible from this event.",
+        clipboardReadFailed: "Could not read clipboard.",
+        clipboardFileConvertFailed: "Could not convert clipboard item to File.",
+        clipboardFeatureUnavailable: "Status: this feature is not available in this browser.",
+        clipboardReading: "Reading clipboard...",
+        clipboardItemsRead: (count) => `Status: ${count} clipboard item(s) read.`,
+        clipboardNoImage: "No image found in clipboard.",
+        clipboardPermissionsFailed: "Could not read clipboard. Check browser permissions.",
+        pastedContentInvalid: "Pasted content is not a valid image.",
+        imageFromEventFailed: "Could not convert clipboard item to File.",
+        waitingImage: "Status: waiting for image.",
+        statusError: (message) => `Status: ${message}`,
+        analyzingScreenshot: (source) => `Analyzing screenshot (${source})...`,
+        killsLabel: "Kills",
+        assistsLabel: "Assists",
+        deathsLabel: "Deaths",
+        kdSubLine: (kills, deaths) => `Kills ${fmt(kills)} / Deaths ${fmt(deaths)}`,
+        kdaSubLine: (kills, assists, deaths) => `Kills ${fmt(kills)} + Assists ${fmt(assists)} / Deaths ${fmt(deaths)}`,
+        progressTo: (value, progress) => `Progress to ${fmt(value,2)}: ${Math.round(progress * 100)}%`,
+        progressEmpty: "Progress: -",
+        toReach: (value, needed) => `To reach ${fmt(value,2)}: ${needed} more kills needed`,
+        currentBuffer: (safeDeaths) => safeDeaths === Infinity
+          ? "Current buffer: INF"
+          : `Current buffer: ${safeDeaths} deaths without descending.`,
+      },
+    };
+    let currentLanguage = DEFAULT_LANGUAGE;
+    let lastHistoryReadings = null;
+    let lastCompositionData = null;
+    let lastAnalysisData = null;
+    let lastStatusState = "idle";
+    let lastStatusMessage = "";
 
     // === AUTH + BACKEND CONFIG ===
     const histSub = document.getElementById("histSub");
@@ -1006,21 +1212,141 @@
     let currentSession = null;
     let googleLoginInitialized = false;
     let googleButtonRendered = false;
+    currentLanguage = detectInitialLanguage();
 
-    function authExpired(message = "Your session expired. Please sign in again.") {
+    function detectInitialLanguage() {
+      const saved = localStorage.getItem(I18N_STORAGE_KEY);
+      if (saved === "es" || saved === "en") return saved;
+      const browserLang = (navigator.language || "").toLowerCase();
+      return browserLang.startsWith("es") ? "es" : DEFAULT_LANGUAGE;
+    }
+
+    function t(key, ...args) {
+      const dict = translations[currentLanguage] || translations[DEFAULT_LANGUAGE];
+      const fallback = translations.en;
+      const value = dict[key] ?? fallback[key];
+      return typeof value === "function" ? value(...args) : value;
+    }
+
+    function updateLanguageButtons() {
+      langEsBtn?.classList.toggle("active", currentLanguage === "es");
+      langEnBtn?.classList.toggle("active", currentLanguage === "en");
+      document.documentElement.lang = currentLanguage;
+    }
+
+    function authLabel(name) {
+      return name ? t("loggedOkWithName", name) : t("loggedOk");
+    }
+
+    function setText(id, value, useHtml = false) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (useHtml) el.innerHTML = value;
+      else el.textContent = value;
+    }
+
+    function applyStaticTranslations() {
+      setText("navMeta", t("navMeta"));
+      setText("navBadge", t("navBadge"));
+      setText("heroTag", t("heroTag"));
+      setText("heroTitle", t("heroTitle"));
+      setText("heroCopy", t("heroCopy"), true);
+      setText("inputLabel", t("inputLabel"));
+      setText("inputCopy", t("inputCopy"));
+      setText("outputLabel", t("outputLabel"));
+      setText("outputCopy", t("outputCopy"));
+      setText("sessionTag", t("sessionTag"));
+      setText("sessionCopy", t("sessionCopy"));
+      setText("uploadTitle", t("uploadTitle"));
+      setText("uploadPill", t("uploadPill"));
+      setText("uploadHint", t("uploadHint"), true);
+      setText("resultsTitle", t("resultsTitle"));
+      setText("resultsPill", t("resultsPill"));
+      setText("historyLabel", t("recentHistory"));
+      setText("chartTitleKda", t("chartKda"));
+      setText("chartTitleKd", t("chartKd"));
+      setText("realisticKdTitle", t("realisticKdTitle"));
+      setText("chartTitleKills", t("chartKills"));
+      setText("chartTitleDeaths", t("chartDeaths"));
+      setText("chartTitleAssists", t("chartAssists"));
+      setText("compositionTitle", t("compositionTitle"));
+      clearBtn.textContent = t("clear");
+      readBtn.textContent = t("pasteFromClipboard");
+      copyBtn.textContent = t("copyResult");
+      logoutBtn.textContent = t("signOut");
+    }
+
+    function refreshTranslatedDynamicUI() {
+      applyStaticTranslations();
+      updateLanguageButtons();
+
+      if (currentSession) {
+        const labelName = currentSession.email || currentSession.username || "";
+        setAuthUI(true, authLabel(labelName));
+      } else {
+        setAuthUI(false);
+      }
+
+      if (lastStatusMessage) {
+        setState(lastStatusState, lastStatusMessage);
+      } else {
+        setState("idle", t("statusReady"));
+      }
+
+      if (Array.isArray(lastHistoryReadings) && lastHistoryReadings.length > 0) {
+        renderMetricCharts(lastHistoryReadings);
+        renderHistorySummary(lastHistoryReadings);
+      } else if (Array.isArray(lastHistoryReadings) && isLoggedIn()) {
+        if (histSub) histSub.textContent = t("noSavedMatchesYet");
+        resetHistorySummary(t("noDataYet"));
+      } else if (!isLoggedIn()) {
+        if (histSub) histSub.textContent = t("signInToSeeHistory");
+        resetHistorySummary(t("signInToSeeHistory"));
+      }
+
+      if (lastCompositionData) {
+        renderCompositionChart(lastCompositionData.kills, lastCompositionData.assists);
+      } else if (Array.isArray(lastHistoryReadings) && isLoggedIn()) {
+        if (compositionSub) compositionSub.textContent = t("noDataYet");
+      } else if (!isLoggedIn()) {
+        if (compositionSub) compositionSub.textContent = t("signInToSeeHistory");
+      }
+
+      if (lastAnalysisData) {
+        renderAnalysisMetrics(lastAnalysisData);
+      }
+
+      if (!previewEl.src) {
+        debugEl.textContent = t("waitingImage");
+      }
+    }
+
+    function setLanguage(lang) {
+      if (lang !== "es" && lang !== "en") return;
+      currentLanguage = lang;
+      localStorage.setItem(I18N_STORAGE_KEY, lang);
+      refreshTranslatedDynamicUI();
+    }
+
+    langEsBtn?.addEventListener("click", () => setLanguage("es"));
+    langEnBtn?.addEventListener("click", () => setLanguage("en"));
+
+    function authExpired(message = t("sessionExpiredGeneric")) {
       setState("bad", message);
       currentSession = null;
+      lastHistoryReadings = null;
+      lastCompositionData = null;
       setAuthUI(false);
-      if (histSub) histSub.textContent = "Sign in to see your history.";
+      if (histSub) histSub.textContent = t("signInToSeeHistory");
       destroyMetricCharts();
       destroyCompositionChart();
-      resetHistorySummary("Sign in to see your history.");
-      if (compositionSub) compositionSub.textContent = "Sign in to see your history.";
+      resetHistorySummary(t("signInToSeeHistory"));
+      if (compositionSub) compositionSub.textContent = t("signInToSeeHistory");
       maybePromptSilentReauth();
     }
 
     function showLoggedOkStatus() {
-      setState("ok", "logged OK");
+      setState("ok", t("loggedOk"));
     }
 
     function ensureGoogleButtonRendered() {
@@ -1035,7 +1361,7 @@
       googleButtonRendered = true;
     }
 
-    function setAuthUI(isLoggedIn, labelText = "logged OK") {
+    function setAuthUI(isLoggedIn, labelText = t("loggedOk")) {
       const btn = googleBtn;
       if (isLoggedIn) {
         if (btn) btn.style.display = "none";
@@ -1089,9 +1415,7 @@
     async function syncSessionUI(promptIfMissing = false) {
       const session = await fetchSession();
       if (session) {
-        const label = session.email
-          ? `logged OK ${session.email}`
-          : (session.username ? `logged OK ${session.username}` : "logged OK");
+        const label = authLabel(session.email || session.username || "");
         setAuthUI(true, label);
         return session;
       }
@@ -1114,18 +1438,18 @@
       }
     }
 
-    function resetHistorySummary(message = "No data yet.") {
+    function resetHistorySummary(message = t("noDataYet")) {
       if (historySummarySub) historySummarySub.textContent = message;
       if (historyKdValue) historyKdValue.textContent = "-";
-      if (historyKdSub) historyKdSub.textContent = "Last 20 matches.";
+      if (historyKdSub) historyKdSub.textContent = t("last20Matches");
       if (historyKdaValue) historyKdaValue.textContent = "-";
-      if (historyKdaSub) historyKdaSub.textContent = "Last 20 matches.";
+      if (historyKdaSub) historyKdaSub.textContent = t("last20Matches");
     }
 
     function renderHistorySummary(readings) {
       const list = Array.isArray(readings) ? readings.slice(0, 20) : [];
       if (!list.length) {
-        resetHistorySummary("No data yet.");
+        resetHistorySummary(t("noDataYet"));
         return;
       }
 
@@ -1141,19 +1465,15 @@
       const kda = totals.deaths > 0 ? ((totals.kills + totals.assists) / totals.deaths) : null;
 
       if (historySummarySub) {
-        historySummarySub.textContent = `Last ${list.length} matches | K ${totals.kills} | D ${totals.deaths} | A ${totals.assists}`;
+        historySummarySub.textContent = t("historySummary", list.length, totals);
       }
       if (historyKdValue) historyKdValue.textContent = totals.deaths > 0 ? fmt(kd, 3) : "INF";
       if (historyKdSub) {
-        historyKdSub.textContent = totals.deaths > 0
-          ? `${totals.kills} kills / ${totals.deaths} deaths`
-          : `${totals.kills} kills with 0 deaths`;
+        historyKdSub.textContent = t("historyKdSub", totals);
       }
       if (historyKdaValue) historyKdaValue.textContent = totals.deaths > 0 ? fmt(kda, 3) : "INF";
       if (historyKdaSub) {
-        historyKdaSub.textContent = totals.deaths > 0
-          ? `${totals.kills + totals.assists} impact / ${totals.deaths} deaths`
-          : `${totals.kills + totals.assists} impact with 0 deaths`;
+        historyKdaSub.textContent = t("historyKdaSub", totals);
       }
     }
 
@@ -1164,24 +1484,25 @@
       const safeKills = Math.max(0, Number(kills) || 0);
       const safeAssists = Math.max(0, Number(assists) || 0);
       const total = safeKills + safeAssists;
+      lastCompositionData = { kills: safeKills, assists: safeAssists };
 
       destroyCompositionChart();
 
       if (total <= 0) {
-        if (compositionSub) compositionSub.textContent = "No data yet.";
+        if (compositionSub) compositionSub.textContent = t("noDataYet");
         return;
       }
 
       const killsPct = Math.round((safeKills / total) * 100);
       const assistsPct = 100 - killsPct;
       if (compositionSub) {
-        compositionSub.textContent = `Kills ${killsPct}% | Assists ${assistsPct}%`;
+        compositionSub.textContent = t("compositionSummary", killsPct, assistsPct);
       }
 
       compositionChart = new Chart(canvas.getContext("2d"), {
         type: "doughnut",
         data: {
-          labels: ["Kills", "Assists"],
+          labels: [t("killsLabel"), t("assistsLabel")],
           datasets: [
             {
               data: [safeKills, safeAssists],
@@ -1251,6 +1572,7 @@
       const ordered = [...readings].sort(
         (a, b) => new Date(a.created_at) - new Date(b.created_at)
       );
+      lastHistoryReadings = [...readings];
 
       const labels = ordered.map((r) => {
         const d = new Date(r.created_at);
@@ -1262,9 +1584,9 @@
       const chartConfig = [
         { id: "chartKda", label: "KDA", color: "#4ed5ff", data: ordered.map((r) => computeKDA(r)), startAtZero: false },
         { id: "chartKd", label: "KD", color: "#6d7bff", data: ordered.map((r) => computeKD(r)), startAtZero: false },
-        { id: "chartKills", label: "Kills", color: "#4be39d", data: ordered.map((r) => r.kills ?? 0), startAtZero: false, sensitiveScale: true },
-        { id: "chartDeaths", label: "Deaths", color: "#ff5f85", data: ordered.map((r) => r.deaths ?? 0), startAtZero: false, sensitiveScale: true },
-        { id: "chartAssists", label: "Assists", color: "#ffd166", data: ordered.map((r) => r.assists ?? 0), startAtZero: false, sensitiveScale: true },
+        { id: "chartKills", label: t("chartKills"), color: "#4be39d", data: ordered.map((r) => r.kills ?? 0), startAtZero: false, sensitiveScale: true },
+        { id: "chartDeaths", label: t("chartDeaths"), color: "#ff5f85", data: ordered.map((r) => r.deaths ?? 0), startAtZero: false, sensitiveScale: true },
+        { id: "chartAssists", label: t("chartAssists"), color: "#ffd166", data: ordered.map((r) => r.assists ?? 0), startAtZero: false, sensitiveScale: true },
       ];
 
       destroyMetricCharts();
@@ -1364,7 +1686,7 @@
         if (!res.ok) {
           //  Si el backend dice 401 => token vencido/invalid
           if (res.status === 401) {
-            authExpired("Session expired. Sign in again to save matches.");
+            authExpired(t("sessionExpiredSave"));
             return { posted: false, skipped: "unauthorized" };
           }
 
@@ -1386,6 +1708,8 @@
 
 
     function setState(state, msg){
+      lastStatusState = state;
+      lastStatusMessage = msg;
       statusEl.textContent = msg;
       dotEl.classList.remove('ok','bad');
       if(state === 'ok') dotEl.classList.add('ok');
@@ -1403,17 +1727,41 @@
     }
 
     function buildResultCopyText({ kills, deaths, assists, kd, kdNextShown, kdNeeded, kdSafeDeaths, kda, kdaNextShown, kdaNeeded, kdaSafeDeaths }){
-      return (
-        `Kills: ${fmt(kills)}\n` +
-        `Deaths: ${fmt(deaths)}\n` +
-        `Assists: ${fmt(assists)}\n\n` +
-        `KD: ${fmt(kd,3)}\n` +
-        `To reach ${fmt(kdNextShown,2)}: ${kdNeeded} more kills needed\n` +
-        `Current buffer: ${kdSafeDeaths === Infinity ? 'INF' : kdSafeDeaths} deaths\n\n` +
-        `KDA: ${fmt(kda,3)}\n` +
-        `To reach ${fmt(kdaNextShown,2)}: ${kdaNeeded} more kills needed\n` +
-        `Current buffer: ${kdaSafeDeaths === Infinity ? 'INF' : kdaSafeDeaths} deaths`
-      );
+      return t("resultCopyText", {
+        kills, deaths, assists, kd, kdNextShown, kdNeeded, kdSafeDeaths,
+        kda, kdaNextShown, kdaNeeded, kdaSafeDeaths, fmt
+      });
+    }
+
+    function renderAnalysisMetrics(data) {
+      const { kills, deaths, assists, kd, kda, kdS, kdaS } = data;
+
+      kdBig.textContent = Number.isFinite(kd) ? fmt(kd, 3) : 'INF';
+      kdSub.textContent = t("kdSubLine", kills, deaths);
+
+      kdaBig.textContent = Number.isFinite(kda) ? fmt(kda, 3) : 'INF';
+      kdaSub.textContent = t("kdaSubLine", kills, assists, deaths);
+
+      kdNext.textContent = Number.isFinite(kdS.nextShown) ? t("toReach", kdS.nextShown, kdS.needed) : (kdS.note || '-');
+      kdaNext.textContent = Number.isFinite(kdaS.nextShown) ? t("toReach", kdaS.nextShown, kdaS.needed) : (kdaS.note || '-');
+
+      kdBar.style.width = `${Math.round(kdS.progress * 100)}%`;
+      kdaBar.style.width = `${Math.round(kdaS.progress * 100)}%`;
+
+      kdProgLabel.textContent = Number.isFinite(kdS.shown) ? t("progressTo", kdS.nextShown, kdS.progress) : t("progressEmpty");
+      kdaProgLabel.textContent = Number.isFinite(kdaS.shown) ? t("progressTo", kdaS.nextShown, kdaS.progress) : t("progressEmpty");
+
+      kdSafe.textContent = t("currentBuffer", kdS.safeDeaths);
+      kdaSafe.textContent = t("currentBuffer", kdaS.safeDeaths);
+
+      setMiniState(kdMini, kdS.needed === 0 || kdS.progress >= 0.5);
+      setMiniState(kdaMini, kdaS.needed === 0 || kdaS.progress >= 0.5);
+
+      resultCopyText = buildResultCopyText({
+        kills, deaths, assists, kd,
+        kdNextShown: kdS.nextShown, kdNeeded: kdS.needed, kdSafeDeaths: kdS.safeDeaths,
+        kda, kdaNextShown: kdaS.nextShown, kdaNeeded: kdaS.needed, kdaSafeDeaths: kdaS.safeDeaths,
+      });
     }
 
     // Google callback (GIS)
@@ -1431,20 +1779,18 @@
         if (!res.ok) {
           const err = await res.text().catch(() => "");
           console.warn("POST /auth/google/login failed:", res.status, err);
-          authExpired("Could not start your session. Sign in again.");
+          authExpired(t("loginStartFailed"));
           return;
         }
 
         const payload = await res.json();
         currentSession = payload;
-        const label = payload.email
-          ? `logged OK ${payload.email}`
-          : (payload.username ? `logged OK ${payload.username}` : "logged OK");
+        const label = authLabel(payload.email || payload.username || "");
         setAuthUI(true, label);
         refreshHistoryIfLoggedIn();
       } catch (e) {
         console.warn("Google login exchange failed:", e);
-        authExpired("Could not reach the backend to start your session.");
+        authExpired(t("backendLoginFailed"));
       } finally {
         focusDropZone();
       }
@@ -1452,6 +1798,7 @@
     window.handleCredentialResponse = handleCredentialResponse;
 
     const googleBtn = document.getElementById("googleBtn");
+    refreshTranslatedDynamicUI();
 
     
 
@@ -1493,13 +1840,15 @@
       }
       currentSession = null;
       latestSavedReading = null;
+      lastHistoryReadings = null;
+      lastCompositionData = null;
       setAuthUI(false);
-      setState("idle", "Ready to analyze your screenshot");
-      if (histSub) histSub.textContent = "Sign in to see your history.";
+      setState("idle", t("statusReady"));
+      if (histSub) histSub.textContent = t("signInToSeeHistory");
       destroyMetricCharts();
       destroyCompositionChart();
-      resetHistorySummary("Sign in to see your history.");
-      if (compositionSub) compositionSub.textContent = "Sign in to see your history.";
+      resetHistorySummary(t("signInToSeeHistory"));
+      if (compositionSub) compositionSub.textContent = t("signInToSeeHistory");
     });
 
     function computeKD(r) {
@@ -1528,7 +1877,7 @@
       });
 
       if (res.status === 401) {
-        authExpired("Session expired. Sign in again to view your history.");
+        authExpired(t("sessionExpiredView"));
         return;
       }
 
@@ -1557,8 +1906,8 @@
         const payload = await fetchMyReadings();
 
         if (!payload || !payload.readings) {
-          if (histSub) histSub.textContent = "Sign in to see your history.";
-          resetHistorySummary("Sign in to see your history.");
+          if (histSub) histSub.textContent = t("signInToSeeHistory");
+          resetHistorySummary(t("signInToSeeHistory"));
           return;
         }
         
@@ -1567,8 +1916,8 @@
         latestSavedReading = count ? (payload.readings[0] || null) : null;
         if (histSub) {
           histSub.textContent = count
-            ? `Showing ${Math.min(20, count)} matches (oldest to newest).`
-            : "No saved matches yet.";
+            ? t("showingMatches", count)
+            : t("noSavedMatchesYet");
         }
 
         if (count) {
@@ -1579,11 +1928,13 @@
           const lastAssists = Number(lastReading?.assists) || 0;
           renderCompositionChart(lastKills, lastAssists);
         } else {
+          lastHistoryReadings = [];
+          lastCompositionData = null;
           latestSavedReading = null;
           destroyMetricCharts();
           destroyCompositionChart();
-          resetHistorySummary("No data yet.");
-          if (compositionSub) compositionSub.textContent = "No data yet.";
+          resetHistorySummary(t("noDataYet"));
+          if (compositionSub) compositionSub.textContent = t("noDataYet");
         }
       } catch (e) {
         // AbortError is expected when cancelling a previous request
@@ -1597,9 +1948,12 @@
 
     function reset(){
       resultCopyText = "-";
+      lastCompositionData = null;
+      lastHistoryReadings = null;
+      lastAnalysisData = null;
       destroyCompositionChart();
-      resetHistorySummary("No data yet.");
-      if (compositionSub) compositionSub.textContent = "No data yet.";
+      resetHistorySummary(t("noDataYet"));
+      if (compositionSub) compositionSub.textContent = t("noDataYet");
       previewBox.style.display = 'none';
       previewEl.src = '';
 
@@ -1620,8 +1974,8 @@
       kdaMini.classList.remove('ok','bad');
 
       copyBtn.disabled = true;
-      debugEl.textContent = 'Status: waiting for image.';
-      setState('idle','Ready to analyze your screenshot');
+      debugEl.textContent = t("waitingImage");
+      setState('idle', t("statusReady"));
     }
 
     clearBtn.addEventListener('click', reset);
@@ -1645,10 +1999,10 @@
     copyBtn.addEventListener('click', async () => {
       try{
         await navigator.clipboard.writeText(resultCopyText);
-        setState('ok','Result copied [OK]');
-        setTimeout(() => setState('ok','Done [OK]'), 900);
+        setState('ok', t("copyOk"));
+        setTimeout(() => setState('ok', t("doneOk")), 900);
       }catch(e){
-        setState('bad','Could not copy result.');
+        setState('bad', t("copyFailed"));
       }
     });
 
@@ -1743,7 +2097,7 @@
       previewEl.src = URL.createObjectURL(file);
       previewBox.style.display = 'block';
 
-      setState('idle', `Analyzing screenshot (${sourceLabel})...`);
+      setState('idle', t("analyzingScreenshot", sourceLabel));
 
       try{
         const res = await Tesseract.recognize(file, 'eng');
@@ -1752,8 +2106,8 @@
         const matches = (text.match(/-?\d+(?:[.,]\d+)?/g) || []).map(s => s.replace(',', '.'));
 
         if(matches.length < 3){
-          resultCopyText = 'Could not read data from the screenshot.';
-          setState('bad','Could not read the data.');
+          resultCopyText = t("screenshotReadFailed");
+          setState('bad', t("readDataFailed"));
           return;
         }
 
@@ -1762,8 +2116,8 @@
         const n3 = parseFloat(matches[2]); // assists
 
         if(!Number.isFinite(n1) || !Number.isFinite(n2) || !Number.isFinite(n3)){
-          resultCopyText = 'The screenshot does not contain valid data.';
-          setState('bad','The screenshot does not contain valid data.');
+          resultCopyText = t("screenshotInvalid");
+          setState('bad', t("screenshotInvalid"));
           return;
         }
 
@@ -1786,72 +2140,24 @@
 
         const kdS = hundredthStats(kdNum, kdDen);
         const kdaS = hundredthStats(kdaNum, kdaDen);
-
-        // Big KPIs
-        kdBig.textContent = Number.isFinite(kd) ? fmt(kd, 3) : 'INF';
-        kdSub.textContent = `Kills ${fmt(n1)} / Deaths ${fmt(n2)}`;
-
-        kdaBig.textContent = Number.isFinite(kda) ? fmt(kda, 3) : 'INF';
-        kdaSub.textContent = `Kills ${fmt(n1)} + Assists ${fmt(n3)} / Deaths ${fmt(n2)}`;
-
-        // Next 0.01 text
-        kdNext.textContent = (Number.isFinite(kdS.nextShown))
-          ? `To reach ${fmt(kdS.nextShown, 2)}: ${kdS.needed} more kills needed`
-          : (kdS.note || '-');
-
-        kdaNext.textContent = (Number.isFinite(kdaS.nextShown))
-          ? `To reach ${fmt(kdaS.nextShown, 2)}: ${kdaS.needed} more kills needed`
-          : (kdaS.note || '-');
-
-        // Progress bars
-        kdBar.style.width = `${Math.round(kdS.progress * 100)}%`;
-        kdaBar.style.width = `${Math.round(kdaS.progress * 100)}%`;
-
-        kdProgLabel.textContent = Number.isFinite(kdS.shown)
-          ? `Progress to ${fmt(kdS.nextShown,2)}: ${Math.round(kdS.progress*100)}%`
-          : 'Progress: -';
-
-        kdaProgLabel.textContent = Number.isFinite(kdaS.shown)
-          ? `Progress to ${fmt(kdaS.nextShown,2)}: ${Math.round(kdaS.progress*100)}%`
-          : 'Progress: -';
-
-        // Safe indicators
-        kdSafe.textContent = (kdS.safeDeaths === Infinity) ? 'Current buffer: INF' : `Current buffer: ${kdS.safeDeaths} deaths without descending.`;
-        kdaSafe.textContent = (kdaS.safeDeaths === Infinity) ? 'Current buffer: INF' : `Current buffer: ${kdaS.safeDeaths} deaths without descending.`;
-
-        // Mini dot color: green if close to next threshold
-        setMiniState(kdMini, kdS.needed === 0 || kdS.progress >= 0.5);
-        setMiniState(kdaMini, kdaS.needed === 0 || kdaS.progress >= 0.5);
-
-        resultCopyText = buildResultCopyText({
-          kills: n1,
-          deaths: n2,
-          assists: n3,
-          kd,
-          kdNextShown: kdS.nextShown,
-          kdNeeded: kdS.needed,
-          kdSafeDeaths: kdS.safeDeaths,
-          kda,
-          kdaNextShown: kdaS.nextShown,
-          kdaNeeded: kdaS.needed,
-          kdaSafeDeaths: kdaS.safeDeaths,
-        });
+        lastAnalysisData = { kills: n1, deaths: n2, assists: n3, kd, kda, kdS, kdaS };
+        renderAnalysisMetrics(lastAnalysisData);
         renderCompositionChart(parsedKills, parsedAssists);
 
         copyBtn.disabled = false;
         if (postOutcome?.skipped === "duplicate_latest") {
-          setState('ok','Analysis complete [OK] Duplicate reading not saved.');
+          setState('ok', t("analysisCompleteDuplicate"));
         } else {
-          setState('ok','Analysis complete [OK]');
+          setState('ok', t("analysisComplete"));
         }
       }catch(err){
-        resultCopyText = 'Could not analyze the image.';
-        setState('bad','Could not analyze the image.');
+        resultCopyText = t("imageAnalyzeFailed");
+        setState('bad', t("imageAnalyzeFailed"));
       }
     }
 
     function describeClipboardItems(items){
-      debugEl.textContent = `Status: ${items.length} clipboard item(s) detected.`;
+      debugEl.textContent = t("clipboardItemsDetected", items.length);
     }
 
     // Robust paste handler
@@ -1860,8 +2166,8 @@
       event.stopPropagation();
       const cd = event.clipboardData;
       if(!cd){
-        debugEl.textContent = 'Status: clipboard is not accessible from this event.';
-        setState('bad','Could not read clipboard.');
+        debugEl.textContent = t("clipboardNotAccessible");
+        setState('bad', t("clipboardReadFailed"));
         return;
       }
 
@@ -1869,13 +2175,13 @@
 
       const imgItem = [...cd.items].find(i => i.type && i.type.startsWith('image/'));
       if(!imgItem){
-        setState('bad','Pasted content is not a valid image.');
+        setState('bad', t("pastedContentInvalid"));
         return;
       }
 
       const file = imgItem.getAsFile();
       if(!file){
-        setState('bad','Could not convert clipboard item to File.');
+        setState('bad', t("imageFromEventFailed"));
         return;
       }
 
@@ -1896,14 +2202,14 @@
     readBtn.addEventListener('click', async () => {
       try{
         if(!navigator.clipboard || !navigator.clipboard.read){
-          setState('bad','This browser does not allow image paste from that button.');
-          debugEl.textContent = 'Status: this feature is not available in this browser.';
+          setState('bad', t("clipboardPermissionsFailed"));
+          debugEl.textContent = t("clipboardFeatureUnavailable");
           return;
         }
-        setState('idle','Reading clipboard...');
+        setState('idle', t("clipboardReading"));
 
         const items = await navigator.clipboard.read();
-        debugEl.textContent = `Status: ${items.length} clipboard item(s) read.`;
+        debugEl.textContent = t("clipboardItemsRead", items.length);
 
         // Find the first image/* clipboard item
         for(const item of items){
@@ -1916,10 +2222,10 @@
           }
         }
 
-        setState('bad','No image found in clipboard.');
+        setState('bad', t("clipboardNoImage"));
       }catch(e){
-        setState('bad','Could not read clipboard. Check browser permissions.');
-        debugEl.textContent = `Status: ${e?.message || e}`;
+        setState('bad', t("clipboardPermissionsFailed"));
+        debugEl.textContent = t("statusError", e?.message || e);
       }
     });
 
