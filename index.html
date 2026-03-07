@@ -587,6 +587,85 @@
       transition:border-color .18s ease, box-shadow .18s ease, background .18s ease;
     }
 
+    .uploadTabs{
+      display:flex;
+      gap:8px;
+      margin-bottom:12px;
+    }
+
+    .uploadTab{
+      border:1px solid var(--stroke-soft);
+      background:var(--panel-bg);
+      color:var(--muted);
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      border-radius:999px;
+      padding:8px 12px;
+      box-shadow:none;
+    }
+
+    .uploadTab[aria-selected="true"]{
+      background:linear-gradient(135deg, rgba(124,58,237,.18), rgba(56,189,248,.14));
+      color:var(--text);
+      border-color:rgba(124,58,237,.38);
+    }
+
+    .uploadPanel[hidden]{
+      display:none;
+    }
+
+    .manualForm{
+      display:grid;
+      gap:12px;
+      background:var(--drop-bg);
+      border:1px solid var(--stroke-soft);
+      border-radius:var(--radius2);
+      padding:16px;
+    }
+
+    .manualGrid{
+      display:grid;
+      grid-template-columns:repeat(3, minmax(0, 1fr));
+      gap:10px;
+    }
+
+    .manualField{
+      display:grid;
+      gap:6px;
+    }
+
+    .manualFieldLabel{
+      color:var(--muted);
+      font-size:12px;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      font-weight:600;
+    }
+
+    .manualField input{
+      width:100%;
+      border:1px solid var(--stroke);
+      border-radius:12px;
+      background:var(--surface);
+      color:var(--text);
+      padding:10px 12px;
+      font:inherit;
+      font-size:14px;
+      outline:none;
+    }
+
+    .manualField input:focus{
+      border-color:rgba(124,58,237,.4);
+      box-shadow:0 0 0 4px rgba(124,58,237,.1);
+    }
+
+    @media (max-width:560px){
+      .manualGrid{
+        grid-template-columns:1fr;
+      }
+    }
+
     .drop:focus{
       border-color:rgba(124,58,237,.5);
       background:var(--drop-focus-bg);
@@ -982,7 +1061,6 @@
             </span>
           </button>
         </div>
-        <div class="navBadge" id="navBadge">Single design / live tracker</div>
       </div>
     </div>
   </div>
@@ -1034,23 +1112,54 @@
           <div class="pill" id="uploadPill">Paste your image</div>
         </div>
         <div class="body">
-          <div class="drop" id="dropZone" tabindex="0">
-            <div class="hint" id="uploadHint">
-              Paste your screenshot with <b>Ctrl+V</b>.<br/>
-              Or use <b>"Paste from clipboard"</b>.
-            </div>
+          <div class="uploadTabs" role="tablist" aria-label="Input mode">
+            <button class="uploadTab" id="tabImage" role="tab" aria-selected="true" aria-controls="panelImage" type="button">Image</button>
+            <button class="uploadTab" id="tabManual" role="tab" aria-selected="false" aria-controls="panelManual" type="button">Manual</button>
+          </div>
 
-            <div class="actions">
-              <button id="clearBtn">Clear</button>
-              <button id="readBtn">Paste from clipboard</button>
-              <button id="copyBtn" disabled>Copy result</button>
-            </div>
+          <div class="uploadPanel" id="panelImage" role="tabpanel" aria-labelledby="tabImage">
+            <div class="drop" id="dropZone" tabindex="0">
+              <div class="hint" id="uploadHint">
+                Paste your screenshot with <b>Ctrl+V</b>.<br/>
+                Or use <b>"Paste from clipboard"</b>.
+              </div>
 
-            <div class="preview" id="previewBox" style="display:none">
-              <img id="preview" alt="preview" />
-            </div>
+              <div class="actions">
+                <button id="clearBtn">Clear</button>
+                <button id="readBtn">Paste from clipboard</button>
+                <button id="copyBtn" disabled>Copy result</button>
+              </div>
 
-            <div class="small" id="debug">Status: waiting for image.</div>
+              <div class="preview" id="previewBox" style="display:none">
+                <img id="preview" alt="preview" />
+              </div>
+
+              <div class="small" id="debug">Status: waiting for image.</div>
+            </div>
+          </div>
+
+          <div class="uploadPanel" id="panelManual" role="tabpanel" aria-labelledby="tabManual" hidden>
+            <form class="manualForm" id="manualForm" novalidate>
+              <div class="manualGrid">
+                <label class="manualField">
+                  <span class="manualFieldLabel" id="manualKillsLabel">Kills</span>
+                  <input id="manualKillsInput" type="number" min="0" step="1" inputmode="numeric" placeholder="0" />
+                </label>
+                <label class="manualField">
+                  <span class="manualFieldLabel" id="manualDeathsLabel">Deaths</span>
+                  <input id="manualDeathsInput" type="number" min="0" step="1" inputmode="numeric" placeholder="0" />
+                </label>
+                <label class="manualField">
+                  <span class="manualFieldLabel" id="manualAssistsLabel">Assists</span>
+                  <input id="manualAssistsInput" type="number" min="0" step="1" inputmode="numeric" placeholder="0" />
+                </label>
+              </div>
+              <div class="actions">
+                <button id="manualApplyBtn" type="submit">Apply values</button>
+                <button id="manualClearBtn" type="button">Clear</button>
+              </div>
+              <div class="small" id="manualHint">Complete all fields and apply values.</div>
+            </form>
           </div>
         </div>
       </div>
@@ -1198,6 +1307,16 @@
     const copyBtn = document.getElementById('copyBtn');
     const dropZone = document.getElementById('dropZone');
     const debugEl = document.getElementById('debug');
+    const tabImageBtn = document.getElementById("tabImage");
+    const tabManualBtn = document.getElementById("tabManual");
+    const panelImage = document.getElementById("panelImage");
+    const panelManual = document.getElementById("panelManual");
+    const manualForm = document.getElementById("manualForm");
+    const manualKillsInput = document.getElementById("manualKillsInput");
+    const manualDeathsInput = document.getElementById("manualDeathsInput");
+    const manualAssistsInput = document.getElementById("manualAssistsInput");
+    const manualApplyBtn = document.getElementById("manualApplyBtn");
+    const manualClearBtn = document.getElementById("manualClearBtn");
     const compositionSub = document.getElementById("compositionSub");
     const historySummarySub = document.getElementById("historySummarySub");
     const historyKdValue = document.getElementById("historyKdValue");
@@ -1231,7 +1350,12 @@
         signOut: "Cerrar sesion",
         uploadTitle: "Subir captura",
         uploadPill: "Pega tu imagen",
+        tabImage: "Imagen",
+        tabManual: "Manual",
         uploadHint: 'Pega tu captura con <b>Ctrl+V</b>.<br/>O usa <b>"Pegar desde el portapapeles"</b>.',
+        manualHint: "Completa los 3 campos y aplica los valores.",
+        manualApply: "Aplicar valores",
+        manualInvalid: "Completa kills, deaths y assists con numeros enteros >= 0.",
         clear: "Limpiar",
         pasteFromClipboard: "Pegar desde el portapapeles",
         copyResult: "Copiar resultado",
@@ -1330,7 +1454,12 @@
         signOut: "Sign out",
         uploadTitle: "Upload Screenshot",
         uploadPill: "Paste your image",
+        tabImage: "Image",
+        tabManual: "Manual",
         uploadHint: 'Paste your screenshot with <b>Ctrl+V</b>.<br/>Or use <b>"Paste from clipboard"</b>.',
+        manualHint: "Fill in all 3 fields and apply values.",
+        manualApply: "Apply values",
+        manualInvalid: "Fill kills, deaths and assists with integer numbers >= 0.",
         clear: "Clear",
         pasteFromClipboard: "Paste from clipboard",
         copyResult: "Copy result",
@@ -1418,6 +1547,7 @@
     let lastAnalysisData = null;
     let lastStatusState = "idle";
     let lastStatusMessage = "";
+    let currentInputMode = "image";
 
     // === AUTH + BACKEND CONFIG ===
     const histSub = document.getElementById("histSub");
@@ -1511,7 +1641,13 @@
       setText("sessionCopy", t("sessionCopy"));
       setText("uploadTitle", t("uploadTitle"));
       setText("uploadPill", t("uploadPill"));
+      tabImageBtn.textContent = t("tabImage");
+      tabManualBtn.textContent = t("tabManual");
       setText("uploadHint", t("uploadHint"), true);
+      setText("manualHint", t("manualHint"));
+      setText("manualKillsLabel", t("killsLabel"));
+      setText("manualDeathsLabel", t("deathsLabel"));
+      setText("manualAssistsLabel", t("assistsLabel"));
       setText("resultsTitle", t("resultsTitle"));
       setText("resultsPill", t("resultsPill"));
       setText("historyLabel", t("recentHistory"));
@@ -1525,6 +1661,8 @@
       clearBtn.textContent = t("clear");
       readBtn.textContent = t("pasteFromClipboard");
       copyBtn.textContent = t("copyResult");
+      manualApplyBtn.textContent = t("manualApply");
+      manualClearBtn.textContent = t("clear");
       logoutBtn.textContent = t("signOut");
     }
 
@@ -2034,6 +2172,25 @@
       });
     }
 
+    function fillAnalysisFromReadingIfEmpty(reading) {
+      const kdIsEmpty = (kdBig.textContent || "").trim() === "-";
+      const kdaIsEmpty = (kdaBig.textContent || "").trim() === "-";
+      if (!kdIsEmpty || !kdaIsEmpty) return;
+
+      const kills = Number(reading?.kills);
+      const deaths = Number(reading?.deaths);
+      const assists = Number(reading?.assists);
+      if (!Number.isFinite(kills) || !Number.isFinite(deaths) || !Number.isFinite(assists)) return;
+
+      const kd = deaths === 0 ? Infinity : (kills / deaths);
+      const kda = deaths === 0 ? Infinity : ((kills + assists) / deaths);
+      const kdS = hundredthStats(kills, deaths);
+      const kdaS = hundredthStats(kills + assists, deaths);
+
+      lastAnalysisData = { kills, deaths, assists, kd, kda, kdS, kdaS };
+      renderAnalysisMetrics(lastAnalysisData);
+    }
+
     // Google callback (GIS)
     async function handleCredentialResponse(response) {
       try {
@@ -2194,6 +2351,7 @@
           renderMetricCharts(payload.readings);
           renderHistorySummary(payload.readings);
           const lastReading = payload.readings[0];
+          fillAnalysisFromReadingIfEmpty(lastReading);
           const lastKills = Number(lastReading?.kills) || 0;
           const lastAssists = Number(lastReading?.assists) || 0;
           renderCompositionChart(lastKills, lastAssists);
@@ -2245,26 +2403,62 @@
 
       copyBtn.disabled = true;
       debugEl.textContent = t("waitingImage");
+      if (manualKillsInput) manualKillsInput.value = "";
+      if (manualDeathsInput) manualDeathsInput.value = "";
+      if (manualAssistsInput) manualAssistsInput.value = "";
       setState('idle', t("statusReady"));
     }
 
+    function setInputMode(mode) {
+      currentInputMode = mode === "manual" ? "manual" : "image";
+      const imageActive = currentInputMode === "image";
+
+      if (tabImageBtn) tabImageBtn.setAttribute("aria-selected", imageActive ? "true" : "false");
+      if (tabManualBtn) tabManualBtn.setAttribute("aria-selected", imageActive ? "false" : "true");
+      if (panelImage) panelImage.hidden = !imageActive;
+      if (panelManual) panelManual.hidden = imageActive;
+
+      if (imageActive) focusDropZone();
+    }
+
     clearBtn.addEventListener('click', reset);
+    manualClearBtn?.addEventListener('click', () => {
+      if (manualKillsInput) manualKillsInput.value = "";
+      if (manualDeathsInput) manualDeathsInput.value = "";
+      if (manualAssistsInput) manualAssistsInput.value = "";
+      setState('idle', t("statusReady"));
+    });
+    tabImageBtn?.addEventListener("click", () => setInputMode("image"));
+    tabManualBtn?.addEventListener("click", () => setInputMode("manual"));
+
+    manualForm?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const kills = Number(manualKillsInput?.value);
+      const deaths = Number(manualDeathsInput?.value);
+      const assists = Number(manualAssistsInput?.value);
+
+      const invalid = !Number.isFinite(kills) || !Number.isFinite(deaths) || !Number.isFinite(assists)
+        || kills < 0 || deaths < 0 || assists < 0
+        || !Number.isInteger(kills) || !Number.isInteger(deaths) || !Number.isInteger(assists);
+
+      if (invalid) {
+        setState("bad", t("manualInvalid"));
+        return;
+      }
+
+      await applyReadingValues(kills, deaths, assists);
+    });
 
     // IMPORTANT: keep focus so Ctrl+V paste lands here
-    dropZone.addEventListener('click', () => dropZone.focus());
-    window.addEventListener('load', () => dropZone.focus());
+    window.addEventListener('load', () => {
+      setInputMode("image");
+      focusDropZone();
+    });
 
     // Restore focus when returning to the tab
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) focusDropZone();
+      if (!document.hidden && currentInputMode === "image") focusDropZone();
     });
-
-    // Restore focus when clicking outside inputs/buttons
-    document.addEventListener('click', (e) => {
-      const tag = (e.target?.tagName || "").toLowerCase();
-      if (tag === "input" || tag === "textarea" || tag === "button") return;
-      focusDropZone();
-    }, true);
 
     copyBtn.addEventListener('click', async () => {
       try{
@@ -2362,6 +2556,29 @@
       el.classList.add(ok ? 'ok' : 'bad');
     }
 
+    async function applyReadingValues(kills, deaths, assists){
+      const postOutcome = await postReadingIfLoggedIn(kills, deaths, assists);
+      if (isLoggedIn()) {
+        await refreshHistoryIfLoggedIn(true);
+      }
+
+      const kd = deaths === 0 ? Infinity : (kills / deaths);
+      const kda = deaths === 0 ? Infinity : ((kills + assists) / deaths);
+      const kdS = hundredthStats(kills, deaths);
+      const kdaS = hundredthStats(kills + assists, deaths);
+
+      lastAnalysisData = { kills, deaths, assists, kd, kda, kdS, kdaS };
+      renderAnalysisMetrics(lastAnalysisData);
+      renderCompositionChart(kills, assists);
+
+      copyBtn.disabled = false;
+      if (postOutcome?.skipped === "duplicate_latest") {
+        setState('ok', t("analysisCompleteDuplicate"));
+      } else {
+        setState('ok', t("analysisComplete"));
+      }
+    }
+
     async function handleImageFile(file, sourceLabel){
       // preview
       previewEl.src = URL.createObjectURL(file);
@@ -2395,31 +2612,7 @@
         const parsedDeaths = Math.trunc(n2);
         const parsedAssists = Math.trunc(n3);
 
-        const postOutcome = await postReadingIfLoggedIn(parsedKills, parsedDeaths, parsedAssists);
-        if (sourceLabel === 'paste' && isLoggedIn()) {
-          await refreshHistoryIfLoggedIn(true);
-        }
-
-        const kdNum = n1;
-        const kdDen = n2;
-        const kdaNum = (n1 + n3);
-        const kdaDen = n2;
-
-        const kd = (kdDen === 0) ? Infinity : (kdNum / kdDen);
-        const kda = (kdaDen === 0) ? Infinity : (kdaNum / kdaDen);
-
-        const kdS = hundredthStats(kdNum, kdDen);
-        const kdaS = hundredthStats(kdaNum, kdaDen);
-        lastAnalysisData = { kills: n1, deaths: n2, assists: n3, kd, kda, kdS, kdaS };
-        renderAnalysisMetrics(lastAnalysisData);
-        renderCompositionChart(parsedKills, parsedAssists);
-
-        copyBtn.disabled = false;
-        if (postOutcome?.skipped === "duplicate_latest") {
-          setState('ok', t("analysisCompleteDuplicate"));
-        } else {
-          setState('ok', t("analysisComplete"));
-        }
+        await applyReadingValues(parsedKills, parsedDeaths, parsedAssists);
       }catch(err){
         resultCopyText = t("imageAnalyzeFailed");
         setState('bad', t("imageAnalyzeFailed"));
@@ -2432,6 +2625,10 @@
 
     // Robust paste handler
     async function onPaste(event){
+      if (currentInputMode !== "image") return;
+      const targetTag = (event.target?.tagName || "").toLowerCase();
+      if (targetTag === "input" || targetTag === "textarea") return;
+
       event.preventDefault();
       event.stopPropagation();
       const cd = event.clipboardData;
@@ -2459,9 +2656,10 @@
     }
 
     function focusDropZone(){
+      if (currentInputMode !== "image") return;
       // Small delay to avoid iframe/repaint timing issues
       setTimeout(() => {
-        try { dropZone.focus(); } catch {}
+        try { dropZone.focus({ preventScroll: true }); } catch {}
       }, 0);
     }
 
@@ -2470,6 +2668,7 @@
 
     // Fallback: read via clipboard API (requires HTTPS/localhost and permission)
     readBtn.addEventListener('click', async () => {
+      if (currentInputMode !== "image") return;
       try{
         if(!navigator.clipboard || !navigator.clipboard.read){
           setState('bad', t("clipboardPermissionsFailed"));
