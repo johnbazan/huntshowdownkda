@@ -1101,6 +1101,10 @@
           </div>
           <div id="googleBtn" style="display:none;"></div>
         </div>
+        <div class="pill topbarStatus">
+          <span class="dot" id="dot"></span>
+          <span id="status">Ready to analyze your screenshot</span>
+        </div>
       </div>
     </div>
   </div>
@@ -1415,7 +1419,7 @@
           `Para llegar a ${fmt(kdaNextShown,2)}: faltan ${kdaNeeded} kills\n` +
           `Margen actual: ${kdaSafeDeaths === Infinity ? 'INF' : kdaSafeDeaths} deaths`,
         loggedOk: "Sesion OK",
-        loggedOkWithName: (name) => `Sesion OK ${name}`,
+        loggedOkWithName: (name) => `${name}`,
         sessionExpiredSave: "La sesion expiro. Inicia sesion de nuevo para guardar partidas.",
         sessionExpiredView: "La sesion expiro. Inicia sesion de nuevo para ver tu historial.",
         sessionExpiredGeneric: "Tu sesion expiro. Inicia sesion de nuevo.",
