@@ -246,6 +246,21 @@
       justify-content:flex-end;
     }
 
+    .topbarAuth{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .topbarStatus{
+      max-width:360px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
     .langToggle{
       display:inline-flex;
       align-items:center;
@@ -380,7 +395,7 @@
 
     header{
       display:grid;
-      grid-template-columns:minmax(0,1.4fr) minmax(320px,.9fr);
+      grid-template-columns:1fr;
       gap:18px;
       align-items:stretch;
       margin-bottom:28px;
@@ -1018,7 +1033,6 @@
       }
 
       .brand,
-      .heroRail,
       .card .body,
       .card .head{
         padding-left:16px;
@@ -1061,6 +1075,18 @@
             </span>
           </button>
         </div>
+        <div id="authBox" class="topbarAuth">
+          <div id="userPill" class="pill" style="display:none;">
+            <span class="dot ok"></span>
+            <span id="userLabel">Signed in</span>
+            <button id="logoutBtn" style="padding:8px 10px; border-radius:10px;">Sign out</button>
+          </div>
+          <div id="googleBtn" style="display:none;"></div>
+        </div>
+        <div class="pill topbarStatus">
+          <span class="dot" id="dot"></span>
+          <span id="status">Ready to analyze your screenshot</span>
+        </div>
       </div>
     </div>
   </div>
@@ -1074,7 +1100,7 @@
         <div class="heroHighlights">
           <div class="heroStat">
             <span class="heroStatLabel" id="inputLabel">Input</span>
-            <div class="heroStatValue">Ctrl+V</div>
+            <div class="heroStatValue">Ctrl+V / Manual</div>
             <div class="subtitle" id="inputCopy">OCR reads kills, deaths and assists from the screenshot.</div>
           </div>
           <div class="heroStat">
@@ -1082,24 +1108,6 @@
             <div class="heroStatValue">KD / KDA</div>
             <div class="subtitle" id="outputCopy">Immediate ratios, next threshold progress and charted history.</div>
           </div>
-        </div>
-      </div>
-      <div class="heroRail">
-        <div id="authBox" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-          <div id="userPill" class="pill" style="display:none;">
-            <span class="dot ok"></span>
-            <span id="userLabel">Signed in</span>
-            <button id="logoutBtn" style="padding:8px 10px; border-radius:10px;">Sign out</button>
-          </div>
-          <div id="googleBtn" style="display:none;"></div>
-        </div>
-        <div class="mutedPanel">
-          <div class="sectionTag" id="sessionTag">Session</div>
-          <div class="subtitle" id="sessionCopy">Keep your latest readings synced and reuse the same interface for quick match-to-match checks.</div>
-        </div>
-        <div class="pill">
-          <span class="dot" id="dot"></span>
-          <span id="status">Ready to analyze your screenshot</span>
         </div>
       </div>
     </header>
@@ -1336,9 +1344,9 @@
         navBadge: "Diseno unico / tracker en vivo",
         heroTag: "Resumen del tracker",
         heroTitle: "Stats de Hunt, claras e inmediatas.",
-        heroCopy: 'Pega una captura con <b>Ctrl+V</b> y obtene al instante <b>KD</b>, <b>KDA</b>, historial de partidas y graficos de composicion sin salir de la pagina.',
+        heroCopy: 'Pega una captura con <b>Ctrl+V</b> o carga los valores manualmente y obtene al instante <b>KD</b>, <b>KDA</b>, historial de partidas y graficos de composicion sin salir de la pagina.',
         inputLabel: "Entrada",
-        inputCopy: "OCR lee kills, deaths y assists directamente desde la captura.",
+        inputCopy: "OCR lee kills, deaths y assists desde la captura, o podes cargarlos manualmente.",
         outputLabel: "Salida",
         outputCopy: "Ratios inmediatos, progreso al siguiente umbral e historial graficado.",
         themeLabel: "Modo oscuro",
@@ -1349,7 +1357,7 @@
         signedIn: "Sesion iniciada",
         signOut: "Cerrar sesion",
         uploadTitle: "Subir captura",
-        uploadPill: "Pega tu imagen",
+        uploadPill: "Imagen o manual",
         tabImage: "Imagen",
         tabManual: "Manual",
         uploadHint: 'Pega tu captura con <b>Ctrl+V</b>.<br/>O usa <b>"Pegar desde el portapapeles"</b>.',
@@ -1440,9 +1448,9 @@
         navBadge: "Single design / live tracker",
         heroTag: "Tracker overview",
         heroTitle: "Hunt stats, clean and immediate.",
-        heroCopy: 'Paste a screenshot with <b>Ctrl+V</b> and get instant <b>KD</b>, <b>KDA</b>, match history, and composition charts without leaving the page.',
+        heroCopy: 'Paste a screenshot with <b>Ctrl+V</b> or enter values manually and get instant <b>KD</b>, <b>KDA</b>, match history, and composition charts without leaving the page.',
         inputLabel: "Input",
-        inputCopy: "OCR reads kills, deaths and assists from the screenshot.",
+        inputCopy: "OCR reads kills, deaths and assists from the screenshot, or you can enter them manually.",
         outputLabel: "Output",
         outputCopy: "Immediate ratios, next threshold progress and charted history.",
         themeLabel: "Dark mode",
@@ -1453,7 +1461,7 @@
         signedIn: "Signed in",
         signOut: "Sign out",
         uploadTitle: "Upload Screenshot",
-        uploadPill: "Paste your image",
+        uploadPill: "Image or manual",
         tabImage: "Image",
         tabManual: "Manual",
         uploadHint: 'Paste your screenshot with <b>Ctrl+V</b>.<br/>Or use <b>"Paste from clipboard"</b>.',
