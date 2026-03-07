@@ -254,13 +254,6 @@
       justify-content:flex-end;
     }
 
-    .topbarStatus{
-      max-width:360px;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-
     .langToggle{
       display:inline-flex;
       align-items:center;
@@ -1094,16 +1087,12 @@
           </button>
         </div>
         <div id="authBox" class="topbarAuth">
-          <div id="userPill" class="pill" style="display:none;">
-            <span class="dot ok"></span>
-            <span id="userLabel">Signed in</span>
-            <button id="logoutBtn" style="padding:8px 10px; border-radius:10px;">Sign out</button>
+          <div id="userPill" class="pill">
+            <span class="dot" id="dot"></span>
+            <span id="status">Not signed in</span>
+            <button id="logoutBtn" style="display:none; padding:8px 10px; border-radius:10px;">Sign out</button>
           </div>
           <div id="googleBtn" style="display:none;"></div>
-        </div>
-        <div class="pill topbarStatus">
-          <span class="dot" id="dot"></span>
-          <span id="status">Ready to analyze your screenshot</span>
         </div>
       </div>
     </div>
@@ -1373,6 +1362,7 @@
         sessionCopy: "Mantene tus ultimas lecturas sincronizadas y reutiliza la misma interfaz para revisar partida a partida.",
         statusReady: "Listo para analizar tu captura",
         signedIn: "Sesion iniciada",
+        signedOut: "Sesion no iniciada",
         signOut: "Cerrar sesion",
         uploadTitle: "Subir captura",
         uploadPill: "Imagen o manual",
@@ -1477,6 +1467,7 @@
         sessionCopy: "Keep your latest readings synced and reuse the same interface for quick match-to-match checks.",
         statusReady: "Ready to analyze your screenshot",
         signedIn: "Signed in",
+        signedOut: "Not signed in",
         signOut: "Sign out",
         uploadTitle: "Upload Screenshot",
         uploadPill: "Image or manual",
@@ -1586,7 +1577,6 @@
     const BACKEND_BASE_URL = "https://fastapi-production-bf29.up.railway.app"; // no trailing slash
 
     const userPill = document.getElementById("userPill");
-    const userLabel = document.getElementById("userLabel");
     const logoutBtn = document.getElementById("logoutBtn");
     const PROMPT_COOLDOWN_MS = 10 * 1000;
     let lastSilentPromptAt = 0;
@@ -1707,7 +1697,7 @@
       if (lastStatusMessage) {
         setState(lastStatusState, lastStatusMessage);
       } else {
-        setState("idle", t("statusReady"));
+        setState("idle", isLoggedIn() ? t("statusReady") : t("signedOut"));
       }
 
       if (Array.isArray(lastHistoryReadings) && lastHistoryReadings.length > 0) {
@@ -1764,11 +1754,11 @@
     themeToggleBtn?.addEventListener("click", () => setTheme(currentTheme === "dark" ? "light" : "dark"));
 
     function authExpired(message = t("sessionExpiredGeneric")) {
-      setState("bad", message);
       currentSession = null;
       lastHistoryReadings = null;
       lastCompositionData = null;
       setAuthUI(false);
+      setState("bad", message);
       if (histSub) histSub.textContent = t("signInToSeeHistory");
       destroyMetricCharts();
       destroyCompositionChart();
@@ -1777,8 +1767,8 @@
       maybePromptSilentReauth();
     }
 
-    function showLoggedOkStatus() {
-      setState("ok", t("loggedOk"));
+    function showLoggedOkStatus(labelText = t("loggedOk")) {
+      setState("ok", labelText);
     }
 
     function ensureGoogleButtonRendered() {
@@ -1798,12 +1788,16 @@
       if (isLoggedIn) {
         if (btn) btn.style.display = "none";
         userPill.style.display = "inline-flex";
-        userLabel.textContent = labelText;
-        showLoggedOkStatus();
+        if (logoutBtn) logoutBtn.style.display = "inline-flex";
+        showLoggedOkStatus(labelText);
       } else {
         ensureGoogleButtonRendered();
         if (btn) btn.style.display = "block";
-        userPill.style.display = "none";
+        userPill.style.display = "inline-flex";
+        if (logoutBtn) logoutBtn.style.display = "none";
+        if (lastStatusState !== "bad") {
+          setState("idle", t("signedOut"));
+        }
       }
     }
 
