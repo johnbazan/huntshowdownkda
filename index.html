@@ -1087,18 +1087,12 @@
           </button>
         </div>
         <div id="authBox" class="topbarAuth">
-          <div id="authStatusPill" class="pill">
-            <span class="dot" id="authStatusDot"></span>
-            <span id="authStatusText">Not signed in</span>
-          </div>
           <div id="userPill" class="pill" style="display:none;">
             <span class="dot ok"></span>
             <span id="userLabel">Signed in</span>
             <button id="logoutBtn" style="padding:8px 10px; border-radius:10px;">Sign out</button>
           </div>
-          <div id="googleBtn" style="display:none;">
-            <button id="loginFallbackBtn" type="button">Sign in</button>
-          </div>
+          <div id="googleBtn" style="display:none;"></div>
         </div>
       </div>
     </div>
@@ -1339,10 +1333,6 @@
     const manualApplyBtn = document.getElementById("manualApplyBtn");
     const manualClearBtn = document.getElementById("manualClearBtn");
     const compositionSub = document.getElementById("compositionSub");
-    const authStatusPill = document.getElementById("authStatusPill");
-    const authStatusDot = document.getElementById("authStatusDot");
-    const authStatusText = document.getElementById("authStatusText");
-    const loginFallbackBtn = document.getElementById("loginFallbackBtn");
     const historySummarySub = document.getElementById("historySummarySub");
     const historyKdValue = document.getElementById("historyKdValue");
     const historyKdSub = document.getElementById("historyKdSub");
@@ -1372,8 +1362,6 @@
         sessionCopy: "Mantene tus ultimas lecturas sincronizadas y reutiliza la misma interfaz para revisar partida a partida.",
         statusReady: "Listo para analizar tu captura",
         signedIn: "Sesion iniciada",
-        signedOut: "Sesion no iniciada",
-        signIn: "Iniciar sesion",
         signOut: "Cerrar sesion",
         uploadTitle: "Subir captura",
         uploadPill: "Imagen o manual",
@@ -1426,7 +1414,6 @@
         sessionExpiredGeneric: "Tu sesion expiro. Inicia sesion de nuevo.",
         loginStartFailed: "No se pudo iniciar tu sesion. Vuelve a iniciar sesion.",
         backendLoginFailed: "No se pudo conectar con el backend para iniciar tu sesion.",
-        loginUnavailable: "Login de Google no disponible en este navegador.",
         resetDebug: "Estado: esperando imagen.",
         copyOk: "Resultado copiado [OK]",
         doneOk: "Listo [OK]",
@@ -1479,8 +1466,6 @@
         sessionCopy: "Keep your latest readings synced and reuse the same interface for quick match-to-match checks.",
         statusReady: "Ready to analyze your screenshot",
         signedIn: "Signed in",
-        signedOut: "Not signed in",
-        signIn: "Sign in",
         signOut: "Sign out",
         uploadTitle: "Upload Screenshot",
         uploadPill: "Image or manual",
@@ -1533,7 +1518,6 @@
         sessionExpiredGeneric: "Your session expired. Please sign in again.",
         loginStartFailed: "Could not start your session. Sign in again.",
         backendLoginFailed: "Could not reach the backend to start your session.",
-        loginUnavailable: "Google login is unavailable in this browser.",
         resetDebug: "Status: waiting for image.",
         copyOk: "Result copied [OK]",
         doneOk: "Done [OK]",
@@ -1694,7 +1678,6 @@
       copyBtn.textContent = t("copyResult");
       manualApplyBtn.textContent = t("manualApply");
       manualClearBtn.textContent = t("clear");
-      if (loginFallbackBtn) loginFallbackBtn.textContent = t("signIn");
       logoutBtn.textContent = t("signOut");
     }
 
@@ -1768,15 +1751,6 @@
     langEsBtn?.addEventListener("click", () => setLanguage("es"));
     langEnBtn?.addEventListener("click", () => setLanguage("en"));
     themeToggleBtn?.addEventListener("click", () => setTheme(currentTheme === "dark" ? "light" : "dark"));
-    loginFallbackBtn?.addEventListener("click", () => {
-      try {
-        if (window.google?.accounts?.id?.prompt) {
-          google.accounts.id.prompt();
-          return;
-        }
-      } catch (_) {}
-      setState("bad", t("loginUnavailable"));
-    });
 
     function authExpired(message = t("sessionExpiredGeneric")) {
       setState("bad", message);
@@ -1806,7 +1780,6 @@
         shape: "rectangular",
       });
       googleButtonRendered = true;
-      if (loginFallbackBtn) loginFallbackBtn.style.display = "none";
     }
 
     function setAuthUI(isLoggedIn, labelText = t("loggedOk")) {
@@ -1815,18 +1788,11 @@
         if (btn) btn.style.display = "none";
         userPill.style.display = "inline-flex";
         userLabel.textContent = labelText;
-        if (authStatusPill) authStatusPill.style.display = "none";
-        if (authStatusDot) authStatusDot.classList.add("ok");
-        if (authStatusText) authStatusText.textContent = labelText;
         showLoggedOkStatus();
       } else {
         ensureGoogleButtonRendered();
         if (btn) btn.style.display = "block";
         userPill.style.display = "none";
-        if (authStatusPill) authStatusPill.style.display = "inline-flex";
-        if (authStatusDot) authStatusDot.classList.remove("ok", "bad");
-        if (authStatusText) authStatusText.textContent = t("signedOut");
-        if (loginFallbackBtn) loginFallbackBtn.style.display = googleButtonRendered ? "none" : "inline-flex";
       }
     }
 
