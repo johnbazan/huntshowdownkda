@@ -885,6 +885,24 @@
       box-shadow:inset 0 1px 0 var(--inset-light);
     }
 
+    .chartPanel.summaryPanel{
+      display:flex;
+      flex-direction:column;
+      min-height:230px;
+      padding:14px;
+      gap:8px;
+    }
+
+    .chartPanel.summaryPanel .sub{
+      margin:0;
+      line-height:1.45;
+    }
+
+    .chartPanel.summaryPanel .historySummary{
+      margin-top:auto;
+      padding-top:6px;
+    }
+
     .chartTitle{
       font-family:"Space Grotesk", sans-serif;
       text-transform:uppercase;
@@ -1083,10 +1101,6 @@
           </div>
           <div id="googleBtn" style="display:none;"></div>
         </div>
-        <div class="pill topbarStatus">
-          <span class="dot" id="dot"></span>
-          <span id="status">Ready to analyze your screenshot</span>
-        </div>
       </div>
     </div>
   </div>
@@ -1236,7 +1250,7 @@
                   <canvas id="chartKd"></canvas>
                 </div>
               </div>
-              <div class="chartPanel">
+              <div class="chartPanel summaryPanel">
                 <div class="chartTitle" id="realisticKdTitle">Realistic KD based on last matches.</div>
                 <div class="sub" id="historySummarySub">No data yet.</div>
                 <div class="historySummary">
